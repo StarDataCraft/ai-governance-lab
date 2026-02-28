@@ -1,18 +1,15 @@
 from __future__ import annotations
 
 import streamlit as st
+import numpy as np
 
-from risk_engine.semantic_search import search_clauses
+from risk_engine.semantic_search import search_clauses, embed_texts
 from risk_engine.governance_graph import GovernanceGraph
 from risk_engine.risk_model import compute_risk_score
 
 
-# -----------------------------
-# UI Setup
-# -----------------------------
-
 st.set_page_config(page_title="Graph-based Governance Engine", layout="wide")
-st.title("AI Governance Lab — Graph Engine v1")
+st.title("AI Governance Lab — Graph Engine v2 (Embedding Risk Mapping)")
 
 jur = st.selectbox("Jurisdiction", ["JP", "AU"])
 
@@ -27,11 +24,6 @@ automation = st.slider("Automation level (1–3)", 1, 3, 2)
 
 run_btn = st.button("Run Graph Governance Analysis", type="primary")
 
-
-# -----------------------------
-# Main Logic
-# -----------------------------
-
 if run_btn:
 
     st.subheader("🔎 Step 1 — Clause Matching")
@@ -43,10 +35,8 @@ if run_btn:
     )
 
     if not matches:
-        st.warning("No clauses found. Check your clauses.json file.")
+        st.warning("No clauses found.")
         st.stop()
-
-    matched_clause_ids = [m.clause.clause_id for m in matches]
 
     for m in matches:
         st.markdown(
@@ -54,54 +44,58 @@ if run_btn:
             f"(score: {m.score:.3f})"
         )
 
-    # -----------------------------
-    # Build Governance Graph
-    # -----------------------------
-
-    st.subheader("🧠 Step 2 — Graph Propagation")
+    st.subheader("🧠 Step 2 — Embedding-based Risk Mapping")
 
     graph = GovernanceGraph()
 
-    # Risk nodes
-    graph.add_risk("privacy_risk", "Personal data misuse or leakage")
-    graph.add_risk("security_risk", "Prompt injection or adversarial attack")
-    graph.add_risk("hallucination_risk", "Incorrect or harmful AI output")
+    # Define risks
+    risk_descriptions = {
+        "privacy_risk": "Risk of personal data misuse or data leakage",
+        "security_risk": "Risk of prompt injection or adversarial manipulation",
+        "hallucination_risk": "Risk of hallucinated or incorrect AI output"
+    }
 
-    # Control nodes
+    # Embed risk descriptions
+    risk_texts = list(risk_descriptions.values())
+    risk_embeddings = embed_texts(risk_texts)
+
+    for i, (risk_id, desc) in enumerate(risk_descriptions.items()):
+        graph.add_risk(
+            risk_id,
+            desc,
+            np.array(risk_embeddings[i], dtype=np.float32)
+        )
+
+    # Controls
     graph.add_control("data_minimisation", "Minimise personal data in prompts")
     graph.add_control("access_control", "Implement logging and access control")
     graph.add_control("human_review", "Require human oversight for high-impact outputs")
 
-    # Add clause nodes
-    for m in matches:
-        cid = m.clause.clause_id
-        text_lower = m.clause.text.lower()
-
-        graph.add_clause(cid, m.clause.title)
-
-        # Simple semantic triggers
-        if "personal" in text_lower or "data" in text_lower:
-            graph.link_clause_to_risk(cid, "privacy_risk")
-
-        if "injection" in text_lower or "adversarial" in text_lower:
-            graph.link_clause_to_risk(cid, "security_risk")
-
-        if "hallucination" in text_lower or "incorrect" in text_lower:
-            graph.link_clause_to_risk(cid, "hallucination_risk")
-
-    # Risk → Control links
     graph.link_risk_to_control("privacy_risk", "data_minimisation")
     graph.link_risk_to_control("privacy_risk", "access_control")
-
     graph.link_risk_to_control("security_risk", "access_control")
-
     graph.link_risk_to_control("hallucination_risk", "human_review")
 
-    result = graph.propagate_from_clauses(matched_clause_ids)
+    explanation_log = []
 
-    # -----------------------------
-    # Risk Scoring
-    # -----------------------------
+    for m in matches:
+        cid = m.clause.clause_id
+        graph.add_clause(cid, m.clause.title)
+
+        clause_emb = np.array(embed_texts([m.clause.text])[0], dtype=np.float32)
+
+        activated = graph.map_clause_to_risks(cid, clause_emb)
+
+        for risk_id, sim in activated:
+            explanation_log.append(
+                f"Clause {cid} activated {risk_id} (similarity={sim:.3f})"
+            )
+
+    result = graph.propagate()
+
+    st.markdown("### Activation Explanation")
+    for line in explanation_log:
+        st.write(line)
 
     st.subheader("📊 Step 3 — Risk Scoring")
 
