@@ -1,0 +1,29 @@
+{"clause_id":"jp_ai_guidelines_2024_scope","source_id":"jp_ai_guidelines_business_2024","title":"AI事業者ガイドライン2024 — 適用範囲と対象事業者","url":"https://www.meti.go.jp/","text":"Summary: 2024 AI事業者ガイドライン applies to developers, providers, and users of AI systems in Japan. It emphasises lifecycle governance, accountability, and risk-based internal controls rather than binding statutory obligations."}
+
+{"clause_id":"jp_ai_guidelines_2024_lifecycle","source_id":"jp_ai_guidelines_business_2024","title":"AI事業者ガイドライン2024 — ライフサイクル管理","url":"https://www.meti.go.jp/","text":"Summary: The guideline requires organisations to implement governance across the AI lifecycle including design, development, deployment, operation, monitoring, and termination. Risk identification and mitigation should be continuous."}
+
+{"clause_id":"jp_ai_guidelines_2024_risk_based","source_id":"jp_ai_guidelines_business_2024","title":"AI事業者ガイドライン2024 — リスクベースアプローチ","url":"https://www.meti.go.jp/","text":"Summary: Organisations should adopt a risk-based approach proportionate to impact and scale. Higher-risk use cases require stronger oversight, documentation, and testing."}
+
+{"clause_id":"jp_ai_guidelines_2024_transparency","source_id":"jp_ai_guidelines_business_2024","title":"AI事業者ガイドライン2024 — 透明性と説明責任","url":"https://www.meti.go.jp/","text":"Summary: AI providers should provide appropriate transparency regarding system purpose, limitations, and risks. Explanations should be understandable to affected stakeholders."}
+
+{"clause_id":"jp_ai_guidelines_2024_human_oversight","source_id":"jp_ai_guidelines_business_2024","title":"AI事業者ガイドライン2024 — 人間による監督","url":"https://www.meti.go.jp/","text":"Summary: Human oversight should be ensured especially where AI outputs may affect rights or interests. Organisations must define escalation and override processes."}
+
+{"clause_id":"jp_ai_guidelines_2024_security","source_id":"jp_ai_guidelines_business_2024","title":"AI事業者ガイドライン2024 — セキュリティ対策","url":"https://www.meti.go.jp/","text":"Summary: Security measures must address risks such as data leakage, adversarial attacks, and misuse. Organisations should implement technical and organisational safeguards."}
+
+{"clause_id":"jp_ai_guidelines_2024_monitoring","source_id":"jp_ai_guidelines_business_2024","title":"AI事業者ガイドライン2024 — 継続的モニタリング","url":"https://www.meti.go.jp/","text":"Summary: Continuous monitoring of model behaviour, performance degradation, and unexpected outputs is required. Feedback loops and corrective action processes should be established."}
+
+{"clause_id":"jp_appi_scope_personal_info","source_id":"jp_appi","title":"個人情報保護法（APPI）— 個人情報の定義","url":"https://www.ppc.go.jp/","text":"Summary: APPI defines personal information broadly. If an AI system processes identifiable information, the operator is subject to statutory obligations under the Act."}
+
+{"clause_id":"jp_appi_cross_border","source_id":"jp_appi","title":"APPI — 越境移転","url":"https://www.ppc.go.jp/","text":"Summary: Cross-border transfer of personal data requires safeguards. When AI services store or process data overseas, compliance measures must be implemented."}
+
+{"clause_id":"jp_appi_purpose_limitation","source_id":"jp_appi","title":"APPI — 利用目的の特定と制限","url":"https://www.ppc.go.jp/","text":"Summary: Organisations must specify the purpose of data use and not exceed it. Using personal data for AI training may require compatibility analysis."}
+
+{"clause_id":"jp_ppc_ai_guidance","source_id":"jp_ppc_guidance","title":"PPC — AI利用に関する留意点","url":"https://www.ppc.go.jp/","text":"Summary: PPC guidance highlights risks of unintended secondary use, data scraping, and insufficient transparency in AI deployments."}
+
+{"clause_id":"jp_cabinet_ai_strategy","source_id":"jp_ai_strategy","title":"内閣府 AI戦略","url":"https://www8.cao.go.jp/","text":"Summary: Japan’s AI Strategy emphasises innovation, international alignment, and responsible AI deployment while avoiding heavy ex-ante regulation."}
+
+{"clause_id":"jp_genai_governance_softlaw","source_id":"jp_ai_guidelines_business_2024","title":"生成AIに関するガバナンスの考え方","url":"https://www.meti.go.jp/","text":"Summary: For generative AI, organisations should consider hallucination risk, harmful content generation, and prompt injection as governance risks requiring mitigation."}
+
+{"clause_id":"jp_genai_prompt_injection","source_id":"jp_ai_guidelines_business_2024","title":"生成AI — プロンプトインジェクション対策","url":"https://www.meti.go.jp/","text":"Summary: Prompt injection risks require input validation, content filtering, and system boundary controls to prevent data leakage or instruction override."}
+
+{"clause_id":"jp_genai_data_leakage","source_id":"jp_ai_guidelines_business_2024","title":"生成AI — データ漏えい対策","url":"https://www.meti.go.jp/","text":"Summary: Organisations must prevent confidential or personal information from being exposed through model outputs. Logging, filtering, and access control should be implemented."}
