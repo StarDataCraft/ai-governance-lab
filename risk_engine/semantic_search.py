@@ -1,4 +1,5 @@
 # risk_engine/semantic_search.py
+
 from __future__ import annotations
 
 import json
@@ -32,9 +33,6 @@ def load_clauses_jsonl(path: Path) -> List[Clause]:
     clauses: List[Clause] = []
     with path.open("r", encoding="utf-8") as f:
         for line in f:
-            line = line.strip()
-            if not line:
-                continue
             obj = json.loads(line)
             clauses.append(
                 Clause(
@@ -45,59 +43,43 @@ def load_clauses_jsonl(path: Path) -> List[Clause]:
                     text=str(obj.get("text", "")),
                 )
             )
-    if not clauses:
-        raise ValueError(f"No clauses loaded from: {path}")
     return clauses
 
 
-def cosine_top_k(query_vec: np.ndarray, mat: np.ndarray, k: int) -> List[Tuple[int, float]]:
-    # If embeddings already normalized, dot product = cosine similarity
+def cosine_top_k(query_vec: np.ndarray, mat: np.ndarray, k: int):
     sims = mat @ query_vec
-    if k >= len(sims):
-        idx = np.argsort(-sims)
-    else:
-        idx = np.argpartition(-sims, k)[:k]
-        idx = idx[np.argsort(-sims[idx])]
+    idx = np.argsort(-sims)[:k]
     return [(int(i), float(sims[i])) for i in idx]
 
 
-def build_cache_paths(jurisdiction: str, cache_dir: Path) -> Tuple[Path, Path]:
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    vec_path = cache_dir / f"embeddings_{jurisdiction}.npz"
-    meta_path = cache_dir / f"embeddings_{jurisdiction}.meta.json"
-    return vec_path, meta_path
+def build_embeddings_on_the_fly(
+    jurisdiction: str,
+    corpus_dir: Path,
+):
+    clauses_path = corpus_dir / jurisdiction / "clauses.jsonl"
+    clauses = load_clauses_jsonl(clauses_path)
 
+    texts = [c.text for c in clauses]
+    embs = embed_texts_local(texts)
+    mat = np.array(embs, dtype=np.float32)
 
-def load_embedding_cache(jurisdiction: str, cache_dir: Path) -> Tuple[np.ndarray, List[Clause], Dict[str, Any]]:
-    vec_path, meta_path = build_cache_paths(jurisdiction, cache_dir)
-    if not vec_path.exists() or not meta_path.exists():
-        raise FileNotFoundError(
-            f"Embedding cache not found for {jurisdiction}. "
-            f"Run scripts/build_embeddings.py first."
-        )
-    mat = np.load(vec_path)["embeddings"].astype(np.float32)
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    clauses = [Clause(**c) for c in meta["clauses"]]
-    info = meta.get("info", {})
-    return mat, clauses, info
+    return mat, clauses
 
 
 def search_clauses(
     query: str,
     jurisdiction: str,
     cache_dir: str | Path = "data",
+    corpus_dir: str | Path = "law_corpus",
     top_k: int = 5,
-    model: str = "intfloat/multilingual-e5-small",
-) -> List[Match]:
-    """
-    Zero-shot semantic search over clause corpus using local embeddings.
-    Requires cache built by scripts/build_embeddings.py.
-    """
-    cache_dir = Path(cache_dir)
-    mat, clauses, _info = load_embedding_cache(jurisdiction, cache_dir)
+):
 
-    # E5 query format
-    q_emb = embed_texts_local([f"query: {query}"], model=model)[0]
+    corpus_dir = Path(corpus_dir)
+
+    # 🔥 No cache. Build dynamically.
+    mat, clauses = build_embeddings_on_the_fly(jurisdiction, corpus_dir)
+
+    q_emb = embed_texts_local([query])[0]
     q = np.array(q_emb, dtype=np.float32)
 
     top = cosine_top_k(q, mat, k=top_k)
