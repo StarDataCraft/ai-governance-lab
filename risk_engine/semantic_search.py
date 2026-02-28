@@ -27,9 +27,13 @@ def load_clauses_jsonl(path: Path):
             try:
                 obj = json.loads(line)
             except json.JSONDecodeError as e:
-                raise ValueError(
-                    f"Invalid JSON at line {i+1} in {path}:\n{line}\nError: {e}"
-                )
+                print("========== JSON ERROR ==========")
+                print("File:", path)
+                print("Line number:", i + 1)
+                print("Raw content:")
+                print(repr(line))
+                print("================================")
+                raise e
 
             clauses.append(
                 Clause(
