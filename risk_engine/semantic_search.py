@@ -12,38 +12,24 @@ import numpy as np
 
 from .embeddings import embed_texts_local
 
-def load_clauses_jsonl(path: Path):
+def load_clauses_json(path: Path):
     if not path.exists():
         raise FileNotFoundError(f"Clause file not found: {path}")
 
-    clauses = []
     with path.open("r", encoding="utf-8") as f:
-        for i, raw in enumerate(f):
-            line = raw.strip()
+        data = json.load(f)
 
-            if not line:
-                continue
-
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError as e:
-                print("========== JSON ERROR ==========")
-                print("File:", path)
-                print("Line number:", i + 1)
-                print("Raw content:")
-                print(repr(line))
-                print("================================")
-                raise e
-
-            clauses.append(
-                Clause(
-                    clause_id=str(obj["clause_id"]),
-                    source_id=str(obj["source_id"]),
-                    title=str(obj.get("title", "")),
-                    url=str(obj.get("url", "")),
-                    text=str(obj.get("text", "")),
-                )
+    clauses = []
+    for obj in data:
+        clauses.append(
+            Clause(
+                clause_id=str(obj["clause_id"]),
+                source_id=str(obj["source_id"]),
+                title=str(obj.get("title", "")),
+                url=str(obj.get("url", "")),
+                text=str(obj.get("text", "")),
             )
+        )
 
     return clauses
     
@@ -91,7 +77,7 @@ def build_embeddings_on_the_fly(
     jurisdiction: str,
     corpus_dir: Path,
 ):
-    clauses_path = corpus_dir / jurisdiction / "clauses.jsonl"
+    clauses_path = corpus_dir / jurisdiction / "clauses.json"
     clauses = load_clauses_jsonl(clauses_path)
 
     texts = [c.text for c in clauses]
