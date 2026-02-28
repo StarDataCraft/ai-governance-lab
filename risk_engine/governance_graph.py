@@ -1,9 +1,8 @@
-# risk_engine/governance_graph.py
-
 from __future__ import annotations
 import networkx as nx
 from typing import List, Dict, Tuple
 import numpy as np
+from sklearn.cluster import KMeans
 
 
 class GovernanceGraph:
@@ -11,7 +10,7 @@ class GovernanceGraph:
     def __init__(self):
         self.G = nx.DiGraph()
         self.risk_embeddings = {}
-        self.similarity_threshold = 0.55
+        self.similarity_threshold = 0.75  # 提高阈值
 
     def add_risk(self, risk_id: str, description: str, embedding: np.ndarray):
         self.G.add_node(risk_id, type="risk", description=description)
@@ -62,3 +61,40 @@ class GovernanceGraph:
             "risks": list(activated_risks),
             "controls": list(activated_controls),
         }
+
+    # -----------------------------
+    # Centrality
+    # -----------------------------
+
+    def compute_centrality(self):
+
+        degree = nx.degree_centrality(self.G)
+        between = nx.betweenness_centrality(self.G)
+
+        return {
+            "degree": degree,
+            "betweenness": between
+        }
+
+    # -----------------------------
+    # Risk clustering
+    # -----------------------------
+
+    def cluster_risks(self, n_clusters=2):
+
+        if len(self.risk_embeddings) < n_clusters:
+            return {}
+
+        risk_ids = list(self.risk_embeddings.keys())
+        emb_matrix = np.array(
+            [self.risk_embeddings[r] for r in risk_ids]
+        )
+
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+        labels = kmeans.fit_predict(emb_matrix)
+
+        clusters = {}
+        for rid, label in zip(risk_ids, labels):
+            clusters.setdefault(int(label), []).append(rid)
+
+        return clusters
