@@ -1,18 +1,18 @@
 # app.py
 from __future__ import annotations
 
-import datetime as dt
 import html
 import re
-import textwrap
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote_plus
-import xml.etree.ElementTree as ET
 
 import requests
 import streamlit as st
 import yaml
+
+from risk_engine.semantic_search import search_clauses
 
 
 # -------------------------
@@ -25,7 +25,7 @@ NEWS_MAX_ITEMS = 10
 
 # Google News RSS locale parameters (hl/gl/ceid)
 GOOGLE_NEWS_LOCALE = {
-    "EU": ("en-GB", "GB", "GB:en"),  # closest practical default
+    "EU": ("en-GB", "GB", "GB:en"),  # practical default
     "US": ("en-US", "US", "US:en"),
     "UK": ("en-GB", "GB", "GB:en"),
     "JP": ("ja", "JP", "JP:ja"),
@@ -88,7 +88,6 @@ def load_sources_db(path: str) -> Dict[str, List[SourceItem]]:
                 )
             )
         db[str(jur)] = out
-
     return db
 
 
@@ -123,7 +122,6 @@ def fetch_rss_items(url: str, timeout: int = 10) -> List[NewsItem]:
     r = requests.get(url, timeout=timeout, headers={"User-Agent": "Mozilla/5.0"})
     r.raise_for_status()
 
-    # Parse RSS XML
     root = ET.fromstring(r.text)
     channel = root.find("channel")
     if channel is None:
@@ -146,19 +144,18 @@ def fetch_rss_items(url: str, timeout: int = 10) -> List[NewsItem]:
 
 def make_latest_query(jur: str, days: int, extra_terms: str) -> str:
     """
-    Google News advanced query supports 'when:30d' etc.
-    We'll bias for governance/legal/guideline terms.
+    Google News supports `when:30d` etc.
+    Keep query tight: governance/legal/guideline terms + jurisdiction hint.
     """
     hint = JURISDICTION_SEARCH_HINT.get(jur, "")
-    # Keep query tight: we want governance + law + guideline + AI Act style terms
     base_terms = "AI governance OR AI regulation OR AI law OR guideline OR framework"
     time_term = f"when:{days}d"
-    parts = [base_terms, hint, extra_terms.strip(), time_term]
+    parts = [base_terms, hint, (extra_terms or "").strip(), time_term]
     return " ".join([p for p in parts if p])
 
 
 def strip_md(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+    return re.sub(r"\s+", " ", (text or "")).strip()
 
 
 def build_answer_template(
@@ -168,45 +165,44 @@ def build_answer_template(
     cite: Dict[str, int],
 ) -> str:
     """
-    A deterministic 'governance memo' style answer that:
-    - references selected sources by citation number
-    - stays concise and actionable
-    You will evolve this later (e.g., map to controls, EU AI Act tiers, etc.).
+    Deterministic governance memo that references selected sources by citation number.
+    (You can later replace this with a report generator.)
     """
-    # Identify key anchors by type/id heuristics
-    # (Keep this simple and transparent; no hidden AI.)
     law_sources = [s for s in selected if s.type in {"law", "bill", "regulation"}]
-    framework_sources = [s for s in selected if s.type in {"framework", "guideline", "policy", "principles", "guidance"}]
+    framework_sources = [
+        s for s in selected if s.type in {"framework", "guideline", "policy", "principles", "guidance"}
+    ]
 
     bullets: List[str] = []
 
     if law_sources:
-        # Mention legal anchor(s)
         refs = ", ".join(f"[{cite[s.id]}]" for s in law_sources[:2])
-        bullets.append(f"**Legal baseline**: Start from the binding legal instrument(s) in this jurisdiction {refs} and confirm whether the described use case falls into regulated categories (e.g., high-risk / prohibited / disclosure duties).")
+        bullets.append(
+            f"**Legal baseline**: Start from the binding instrument(s) in this jurisdiction {refs} "
+            f"and confirm whether the use case triggers regulated categories (e.g., high-risk / prohibited / disclosure duties)."
+        )
 
     if framework_sources:
         refs = ", ".join(f"[{cite[s.id]}]" for s in framework_sources[:2])
-        bullets.append(f"**Operational governance baseline**: Use the leading national framework/guideline(s) to structure risk management, documentation, and oversight {refs}.")
+        bullets.append(
+            f"**Operational governance baseline**: Use the leading national framework/guideline(s) to structure "
+            f"risk management, documentation, and oversight {refs}."
+        )
 
-    # Always include: risk mgmt, documentation, monitoring, human oversight
-    # (Generic, but correct across major frameworks; user can refine per jurisdiction.)
     refs_all = ", ".join(f"[{cite[s.id]}]" for s in selected[: min(3, len(selected))])
     bullets.extend(
         [
-            f"**Risk management**: Define risks, assess impact/likelihood, and track mitigations as a maintained process (not a one-off checklist) {refs_all}.",
-            f"**Documentation & accountability**: Maintain clear technical and governance documentation (purpose, data sources, evaluation, change management, approvals) {refs_all}.",
-            f"**Monitoring & incident response**: Implement monitoring for drift/abuse and have an incident response path (triage → rollback/fallback → reporting) {refs_all}.",
-            f"**Human oversight**: Specify when humans must review/override, and ensure users/operators understand limitations {refs_all}.",
+            f"**Risk management**: Define risks, assess impact/likelihood, and track mitigations as a maintained process {refs_all}.",
+            f"**Documentation & accountability**: Maintain technical + governance documentation (purpose, data, eval, change mgmt, approvals) {refs_all}.",
+            f"**Monitoring & incident response**: Monitor for drift/abuse and have an incident path (triage → rollback/fallback → reporting) {refs_all}.",
+            f"**Human oversight**: Specify when humans must review/override, and ensure operators understand limitations {refs_all}.",
         ]
     )
 
-    use_case_clean = strip_md(use_case)[:600]
+    use_case_clean = strip_md(use_case)[:800]
     header = f"## Governance guidance (jurisdiction: {jur})\n\n**Use case**: {use_case_clean}\n"
     body = "\n".join([f"- {b}" for b in bullets])
-
     closing = "\n\n**References used**: " + ", ".join(f"[{cite[s.id]}]" for s in selected)
-
     return header + "\n\n" + body + closing
 
 
@@ -215,7 +211,9 @@ def build_answer_template(
 # -------------------------
 st.set_page_config(page_title="AI Governance Lab", layout="wide")
 st.title("AI Governance Lab — Jurisdiction-aware Governance Finder (v0)")
-st.caption("Pick a jurisdiction → get top authoritative AI governance sources (≤10) + a cite-backed guidance memo + latest developments (RSS).")
+st.caption(
+    "Pick a jurisdiction → get top authoritative AI governance sources (≤10) + a cite-backed memo + semantic evidence retrieval + latest developments (RSS)."
+)
 
 # Load sources DB
 try:
@@ -235,11 +233,24 @@ with left:
     jur = st.selectbox("Jurisdiction", jurisdictions, index=0)
     include_intl = st.checkbox("Include INTL (OECD etc.) as supplements", value=True)
 
-    st.markdown("### Use case (optional, but recommended)")
+    st.markdown("### Use case")
     use_case = st.text_area(
         "Describe the AI system/use case briefly",
         value="LLM-based customer support chatbot processing personal data; risks include prompt injection, data leakage, and hallucinations.",
         height=140,
+    )
+
+    st.markdown("### Semantic evidence (zero-shot embeddings)")
+    enable_semantic = st.checkbox("Show semantic evidence matches from your local clause corpus", value=True)
+    top_k = st.slider("Top-K clauses", min_value=3, max_value=12, value=5, step=1)
+    embed_model = st.selectbox(
+        "Local embedding model",
+        [
+            "intfloat/multilingual-e5-small",
+            "sentence-transformers/all-MiniLM-L6-v2",
+            "BAAI/bge-m3",
+        ],
+        index=0,
     )
 
     st.markdown("### Latest developments (optional)")
@@ -247,7 +258,7 @@ with left:
     days = st.slider("Recency window (days)", min_value=7, max_value=60, value=DEFAULT_NEWS_DAYS, step=1)
     extra_terms = st.text_input("Extra search terms (optional)", value="AI Act OR guideline OR framework OR compliance")
 
-    run_btn = st.button("Generate (sources + memo + latest)", type="primary")
+    run_btn = st.button("Generate (sources + memo + evidence + latest)", type="primary")
 
 with right:
     st.markdown("### Output")
@@ -260,7 +271,6 @@ with right:
 
     if include_intl and jur != "INTL" and "INTL" in sources_db:
         intl = select_top_sources(sources_db["INTL"], k=MAX_SOURCES)
-        # Merge and re-trim
         merged = selected + [s for s in intl if s.id not in {x.id for x in selected}]
         selected = select_top_sources(merged, k=MAX_SOURCES)
 
@@ -282,7 +292,51 @@ with right:
 
     st.divider()
 
-    # Latest developments
+    # Semantic evidence retrieval (local embeddings)
+    if enable_semantic:
+        st.subheader("Semantic Evidence (law/guideline clause matches) — zero-shot local embeddings")
+        st.caption(
+            "Requires local clause corpus + cached embeddings. "
+            "Build cache via: `python scripts/build_embeddings.py --jur <JUR>`"
+        )
+
+        try:
+            matches = search_clauses(
+                query=use_case,
+                jurisdiction=jur,
+                cache_dir="data",
+                top_k=top_k,
+                model=embed_model,
+            )
+        except FileNotFoundError as e:
+            st.warning(str(e))
+            st.info(
+                "Fix:\n"
+                "1) Add clauses at `law_corpus/<JUR>/clauses.jsonl`\n"
+                "2) Run: `python scripts/build_embeddings.py --jur <JUR>`"
+            )
+            matches = []
+        except Exception as e:
+            st.error(f"Semantic search error: {e}")
+            matches = []
+
+        if matches:
+            for rank, m in enumerate(matches, start=1):
+                cite_num = cite.get(m.clause.source_id)
+                cite_tag = f"[{cite_num}]" if cite_num else "[?]"
+
+                st.markdown(f"### {rank}. {m.clause.title} — score: `{m.score:.3f}` {cite_tag}")
+                st.markdown(f"- Source: `{m.clause.source_id}` {cite_tag}")
+                if m.clause.url:
+                    st.markdown(f"- Link: {m.clause.url}")
+                st.write(m.clause.text)
+            st.caption("Tip: keep clause chunks short (~200–800 chars). Add more clauses to improve retrieval quality.")
+        else:
+            st.write("No matches found (or cache missing).")
+
+        st.divider()
+
+    # Latest developments (RSS)
     if enable_latest:
         st.subheader(f"Latest developments (Google News RSS, last {days} days, ≤{NEWS_MAX_ITEMS})")
 
@@ -299,7 +353,7 @@ with right:
             news_items = []
 
         if not news_items:
-            st.write("No items returned (or fetch blocked). Try changing the query/locale/recency window.")
+            st.write("No items returned (or fetch blocked). Try changing query/locale/recency window.")
         else:
             for i, it in enumerate(news_items[:NEWS_MAX_ITEMS], start=1):
                 meta = []
@@ -310,7 +364,7 @@ with right:
                 meta_str = " · ".join(meta) if meta else ""
                 st.markdown(f"**{i}. [{it.title}]({it.link})**  \n{meta_str}")
 
-    st.divider()
+        st.divider()
 
     # References section (explicit, numbered)
     st.subheader("References")
