@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,7 +12,37 @@ import numpy as np
 
 from .embeddings import embed_texts_local
 
+def load_clauses_jsonl(path: Path):
+    if not path.exists():
+        raise FileNotFoundError(f"Clause file not found: {path}")
 
+    clauses = []
+    with path.open("r", encoding="utf-8") as f:
+        for i, raw in enumerate(f):
+            line = raw.strip()
+
+            if not line:
+                continue
+
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"Invalid JSON at line {i+1} in {path}:\n{line}\nError: {e}"
+                )
+
+            clauses.append(
+                Clause(
+                    clause_id=str(obj["clause_id"]),
+                    source_id=str(obj["source_id"]),
+                    title=str(obj.get("title", "")),
+                    url=str(obj.get("url", "")),
+                    text=str(obj.get("text", "")),
+                )
+            )
+
+    return clauses
+    
 @dataclass
 class Clause:
     clause_id: str
