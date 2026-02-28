@@ -1,0 +1,84 @@
+version: "0.1"
+
+jurisdictions:
+  EU:
+    - id: eu_ai_act_2024_1689
+      title: "Regulation (EU) 2024/1689 (Artificial Intelligence Act)"
+      authority: "EUR-Lex / European Union"
+      type: "law"
+      url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng"
+      priority: 100
+
+  US:
+    - id: nist_ai_rmf_1_0_pdf
+      title: "NIST AI Risk Management Framework (AI RMF 1.0)"
+      authority: "NIST"
+      type: "framework"
+      url: "https://nvlpubs.nist.gov/nistpubs/ai/nist.ai.100-1.pdf"
+      priority: 100
+
+  UK:
+    - id: uk_ai_regulation_white_paper
+      title: "AI regulation: a pro-innovation approach (White Paper)"
+      authority: "UK Government (GOV.UK)"
+      type: "policy"
+      url: "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper"
+      priority: 100
+
+  JP:
+    - id: jp_ai_guidelines_business_v1
+      title: "AI Guidelines for Business Ver 1.0"
+      authority: "MIC & METI (Japan)"
+      type: "guideline"
+      url: "https://www.meti.go.jp/shingikai/mono_info_service/ai_shakai_jisso/pdf/20240419_9.pdf"
+      priority: 100
+
+  CA:
+    - id: ca_aida_companion
+      title: "Artificial Intelligence and Data Act (AIDA) — Companion document"
+      authority: "Innovation, Science and Economic Development Canada"
+      type: "guidance"
+      url: "https://ised-isde.canada.ca/site/innovation-better-canada/en/artificial-intelligence-and-data-act-aida-companion-document"
+      priority: 90
+    - id: ca_bill_c27
+      title: "Bill C-27 (includes AIDA) — LEGISinfo"
+      authority: "Parliament of Canada"
+      type: "bill"
+      url: "https://www.parl.ca/legisinfo/en/bill/44-1/c-27"
+      priority: 80
+
+  SG:
+    - id: sg_model_ai_gov_framework_2e
+      title: "Model AI Governance Framework (2nd edition)"
+      authority: "IMDA (Singapore)"
+      type: "framework"
+      url: "https://www.imda.gov.sg/-/media/imda/files/infocomm-media-landscape/sg-digital/tech-pillars/artificial-intelligence/second-edition-of-the-model-ai-governance-framework.pdf"
+      priority: 90
+    - id: sg_model_ai_gov_genai_2024
+      title: "Model AI Governance Framework for Generative AI (2024)"
+      authority: "AI Verify Foundation (Singapore)"
+      type: "framework"
+      url: "https://aiverifyfoundation.sg/wp-content/uploads/2024/06/Model-AI-Governance-Framework-for-Generative-AI-19-June-2024.pdf"
+      priority: 100
+
+  AU:
+    - id: au_ai_ethics_principles
+      title: "Australia's AI Ethics Principles"
+      authority: "Australian Government (industry.gov.au)"
+      type: "principles"
+      url: "https://www.industry.gov.au/publications/australias-ai-ethics-principles"
+      priority: 90
+    - id: au_implement_ethics_principles_gov
+      title: "Implementing Australia's AI Ethics Principles in government"
+      authority: "Australian Government (finance.gov.au)"
+      type: "guidance"
+      url: "https://www.finance.gov.au/government/public-data/data-and-digital-ministers-meeting/national-framework-assurance-artificial-intelligence-government/implementing-australias-ai-ethics-principles-government"
+      priority: 80
+
+  INTL:
+    - id: oecd_ai_principles
+      title: "OECD AI Principles"
+      authority: "OECD"
+      type: "principles"
+      url: "https://www.oecd.org/en/topics/sub-issues/ai-principles.html"
+      priority: 70
