@@ -1,0 +1,37 @@
+[
+  {
+    "clause_id": "JP-1",
+    "source_id": "jp_ai_guideline",
+    "title": "Human Oversight Requirement",
+    "url": "https://www.soumu.go.jp",
+    "text": "AI systems should ensure meaningful human oversight, particularly in high-risk or high-impact decision-making contexts."
+  },
+  {
+    "clause_id": "JP-2",
+    "source_id": "jp_ai_guideline",
+    "title": "Personal Data Protection",
+    "url": "https://www.ppc.go.jp",
+    "text": "Organizations deploying AI must protect personal data, prevent unauthorized access, and ensure compliance with data protection principles."
+  },
+  {
+    "clause_id": "JP-3",
+    "source_id": "jp_ai_guideline",
+    "title": "Security and Adversarial Safeguards",
+    "url": "https://www.meti.go.jp",
+    "text": "Developers and operators must implement safeguards against prompt injection, adversarial manipulation, and system abuse."
+  },
+  {
+    "clause_id": "JP-4",
+    "source_id": "jp_ai_guideline",
+    "title": "Transparency and Explainability",
+    "url": "https://www.meti.go.jp",
+    "text": "AI systems should provide transparency regarding their capabilities and limitations and offer explanations when outputs affect individuals."
+  },
+  {
+    "clause_id": "JP-5",
+    "source_id": "jp_ai_guideline",
+    "title": "Risk Assessment and Monitoring",
+    "url": "https://www.meti.go.jp",
+    "text": "Organizations should conduct ongoing risk assessments, monitor AI system performance, and implement mitigation measures where necessary."
+  }
+]
