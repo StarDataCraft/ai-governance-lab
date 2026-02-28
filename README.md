@@ -1,10 +1,15 @@
-AI systems are increasingly deployed in regulated environments.
-However, practical governance toolkits remain fragmented.
+# AI Governance Lab
 
-AI Governance Lab is an experimental repository exploring structured approaches to:
-	Risk taxonomy
-	Monitoring metrics
-	rganizational governance models
-	Compliance-ready documentation templates
+Minimal, explainable tooling for AI governance prototyping.
 
-This project evolves through iterative tasks executed by AI coding agents, with human oversight focused on system design and governance logic.
+## What this is (v0)
+A rule-based **Risk Classification Engine**:
+- reads a structured taxonomy from YAML
+- outputs category scores + (severity, likelihood, detectability)
+- returns rationale for auditability
+
+## Quickstart
+```bash
+pip install -r requirements.txt
+python -m risk_engine.classifier "Public LLM chatbot for customer support; risks include prompt injection and data leakage."
+pytest -q
