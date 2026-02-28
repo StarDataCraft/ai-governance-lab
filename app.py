@@ -5,12 +5,12 @@ import html
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import quote_plus
+from typing import Any, Dict, List, Optional
 
 import requests
 import streamlit as st
 import yaml
+from urllib.parse import quote_plus
 
 from risk_engine.semantic_search import search_clauses
 
@@ -166,15 +166,18 @@ def build_answer_template(
 ) -> str:
     """
     Deterministic governance memo that references selected sources by citation number.
-    (You can later replace this with a report generator.)
+    Enhanced with jurisdiction-specific bullets (AU focus) without using an LLM.
     """
+    selected_ids = {s.id for s in selected}
+
     law_sources = [s for s in selected if s.type in {"law", "bill", "regulation"}]
     framework_sources = [
-        s for s in selected if s.type in {"framework", "guideline", "policy", "principles", "guidance"}
+        s for s in selected if s.type in {"framework", "guideline", "policy", "principles", "guidance", "regulator_guidance"}
     ]
 
     bullets: List[str] = []
 
+    # Baseline bullets (general)
     if law_sources:
         refs = ", ".join(f"[{cite[s.id]}]" for s in law_sources[:2])
         bullets.append(
@@ -189,6 +192,77 @@ def build_answer_template(
             f"risk management, documentation, and oversight {refs}."
         )
 
+    # -------------------------
+    # AU-specific augmentation
+    # -------------------------
+    if jur == "AU":
+        # Detect OAIC guidance presence (by id prefix or known ids)
+        oaic_ids = {
+            "oaic_ai_products_guidance",
+            "oaic_genai_training_guidance",
+        }
+        has_oaic = any(x in selected_ids for x in oaic_ids) or any(s.id.startswith("oaic_") for s in selected)
+
+        # Detect government policy / assurance framework
+        gov_policy_ids = {
+            "au_ai_in_gov_policy",
+            "au_ai_assurance_framework_pdf",
+            "au_ai_assurance_framework_page",
+            "au_ai_impact_assessment_privacy_security",
+        }
+        has_gov_policy = any(x in selected_ids for x in gov_policy_ids) or any(
+            s.id.startswith("au_ai_in_gov_policy") or s.id.startswith("au_ai_assurance_framework") for s in selected
+        )
+
+        if has_oaic:
+            refs = []
+            for sid in ["oaic_ai_products_guidance", "oaic_genai_training_guidance"]:
+                if sid in cite:
+                    refs.append(f"[{cite[sid]}]")
+            ref_str = ", ".join(refs) if refs else ", ".join(f"[{cite[s.id]}]" for s in selected[: min(3, len(selected))])
+
+            bullets.append(
+                f"**AU privacy boundary for LLM chatbots**: Treat prompts, logs, and outputs as potentially containing personal information. "
+                f"Apply data minimisation, purpose limitation, and retention controls; avoid feeding sensitive or unnecessary identifiers into prompts {ref_str}."
+            )
+            bullets.append(
+                f"**Vendor / cross-border & product due diligence**: Assess whether the AI service retains prompts, uses them for training, where data is stored/processed, "
+                f"and what contractual/operational safeguards exist (incl. cross-border data flows and access controls) {ref_str}."
+            )
+            bullets.append(
+                f"**Logging, prompt governance & leakage prevention**: Implement redaction, access control, and logging policies that balance auditability with privacy. "
+                f"Define prompt templates/guardrails and incident playbooks for suspected leakage or misuse {ref_str}."
+            )
+
+        if has_gov_policy:
+            # Prefer exact refs if present
+            refs = []
+            for sid in [
+                "au_ai_in_gov_policy",
+                "au_ai_assurance_framework_pdf",
+                "au_ai_assurance_framework_page",
+                "au_ai_impact_assessment_privacy_security",
+            ]:
+                if sid in cite:
+                    refs.append(f"[{cite[sid]}]")
+            ref_str = ", ".join(refs) if refs else ", ".join(f"[{cite[s.id]}]" for s in selected[: min(3, len(selected))])
+
+            bullets.append(
+                f"**Impact assessment & approval gates**: Before deployment, run an impact assessment (privacy/security, user impact, failure modes) and define approval thresholds "
+                f"for high-impact changes (model updates, new data sources, new user groups) {ref_str}."
+            )
+            bullets.append(
+                f"**Assurance practices (evidence-based)**: Maintain evidence for governance decisions—risk register, testing results, monitoring metrics, "
+                f"change logs, and accountability assignments—to support internal/external assurance expectations {ref_str}."
+            )
+            bullets.append(
+                f"**Incident pathway & escalation**: Define triage, rollback/fallback, user communications, and reporting steps for LLM incidents (harmful output, leakage, "
+                f"security exploitation), and test the pathway periodically {ref_str}."
+            )
+
+    # -------------------------
+    # General operational bullets (still included)
+    # -------------------------
     refs_all = ", ".join(f"[{cite[s.id]}]" for s in selected[: min(3, len(selected))])
     bullets.extend(
         [
@@ -285,7 +359,7 @@ with right:
 
     st.divider()
 
-    # Memo / answer with citations
+    # Memo / answer with citations (enhanced with AU-specific bullets)
     st.subheader("Cite-backed guidance memo (deterministic v0)")
     memo = build_answer_template(jur=jur, use_case=use_case, selected=selected, cite=cite)
     st.markdown(memo)
