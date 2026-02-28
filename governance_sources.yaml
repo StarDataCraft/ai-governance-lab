@@ -1,84 +1,216 @@
 version: "0.1"
 
 jurisdictions:
+
   EU:
     - id: eu_ai_act_2024_1689
-      title: "Regulation (EU) 2024/1689 (Artificial Intelligence Act)"
-      authority: "EUR-Lex / European Union"
+      title: "Regulation (EU) 2024/1689 (AI Act)"
+      authority: "European Union (EUR-Lex)"
       type: "law"
       url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng"
       priority: 100
 
+    - id: eu_ai_act_annex_iii
+      title: "EU AI Act Annex III: High-Risk AI Systems"
+      authority: "European Union (EUR-Lex)"
+      type: "law"
+      url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32024R1689#d1e1647-1-1"
+      priority: 95
+
+    - id: oecd_ai_principles
+      title: "OECD AI Principles"
+      authority: "OECD"
+      type: "principles"
+      url: "https://www.oecd.org/en/topics/sub-issues/ai-principles.html"
+      priority: 90
+
+    - id: unesco_ai_ethics
+      title: "UNESCO Recommendation on the Ethics of AI"
+      authority: "UNESCO"
+      type: "international_guideline"
+      url: "https://www.unesco.org/en/artificial-intelligence/recommendation-ethics"
+      priority: 80
+
   US:
-    - id: nist_ai_rmf_1_0_pdf
+    - id: us_nist_ai_rmf_1_0
       title: "NIST AI Risk Management Framework (AI RMF 1.0)"
       authority: "NIST"
       type: "framework"
       url: "https://nvlpubs.nist.gov/nistpubs/ai/nist.ai.100-1.pdf"
       priority: 100
 
+    - id: us_federal_ai_principles
+      title: "AI Principles — U.S. Federal Agencies"
+      authority: "U.S. Government"
+      type: "policy"
+      url: "https://www.whitehouse.gov/wp-content/uploads/2020/10/AI_Principles.pdf"
+      priority: 90
+
+    - id: us_executive_order_2025
+      title: "Executive Order on AI Leadership"
+      authority: "U.S. Government"
+      type: "policy"
+      url: "https://www.whitehouse.gov/briefing-room/presidential-actions/2025/01/15/executive-order-on-ai-regulation/"
+      priority: 95
+
+    - id: us_ftc_ai_guidance
+      title: "FTC Guidance on AI Practices"
+      authority: "Federal Trade Commission"
+      type: "regulator_guidance"
+      url: "https://www.ftc.gov/news-events/topics/artificial-intelligence"
+      priority: 90
+
   UK:
     - id: uk_ai_regulation_white_paper
-      title: "AI regulation: a pro-innovation approach (White Paper)"
-      authority: "UK Government (GOV.UK)"
+      title: "AI Regulation: A Pro-Innovation Approach (White Paper)"
+      authority: "UK Government"
       type: "policy"
       url: "https://www.gov.uk/government/publications/ai-regulation-a-pro-innovation-approach/white-paper"
       priority: 100
 
+    - id: uk_ai_guidance_dcms
+      title: "UK AI guidance (DCMS)"
+      authority: "Department for Digital, Culture, Media & Sport (UK)"
+      type: "guideline"
+      url: "https://www.gov.uk/government/organisations/department-for-digital-culture-media-sport"
+      priority: 90
+
   JP:
-    - id: jp_ai_guidelines_business_v1
-      title: "AI Guidelines for Business Ver 1.0"
-      authority: "MIC & METI (Japan)"
+    - id: jp_ai_guidelines_business
+      title: "AI Guidelines for Business (METI/MIC Japan)"
+      authority: "Japanese Government"
       type: "guideline"
       url: "https://www.meti.go.jp/shingikai/mono_info_service/ai_shakai_jisso/pdf/20240419_9.pdf"
       priority: 100
 
-  CA:
-    - id: ca_aida_companion
-      title: "Artificial Intelligence and Data Act (AIDA) — Companion document"
-      authority: "Innovation, Science and Economic Development Canada"
-      type: "guidance"
-      url: "https://ised-isde.canada.ca/site/innovation-better-canada/en/artificial-intelligence-and-data-act-aida-companion-document"
-      priority: 90
-    - id: ca_bill_c27
-      title: "Bill C-27 (includes AIDA) — LEGISinfo"
-      authority: "Parliament of Canada"
-      type: "bill"
-      url: "https://www.parl.ca/legisinfo/en/bill/44-1/c-27"
+    - id: jp_ai_governance_soft_law
+      title: "Japan’s AI Governance Soft Law Approach"
+      authority: "White & Case / external review"
+      type: "analysis"
+      url: "https://www.whitecase.com/insight-our-thinking/ai-watch-global-regulatory-tracker-japan"
       priority: 80
+
+    - id: unesco_ai_ethics
+      title: "UNESCO Recommendation on the Ethics of AI"
+      authority: "UNESCO"
+      type: "international_guideline"
+      url: "https://www.unesco.org/en/artificial-intelligence/recommendation-ethics"
+      priority: 70
 
   SG:
     - id: sg_model_ai_gov_framework_2e
-      title: "Model AI Governance Framework (2nd edition)"
-      authority: "IMDA (Singapore)"
+      title: "Model AI Governance Framework (2nd Edition)"
+      authority: "IMDA Singapore"
       type: "framework"
-      url: "https://www.imda.gov.sg/-/media/imda/files/infocomm-media-landscape/sg-digital/tech-pillars/artificial-intelligence/second-edition-of-the-model-ai-governance-framework.pdf"
-      priority: 90
+      url: "https://www.imda.gov.sg/-/media/imda/files/.../second-edition-of-the-model-ai-governance-framework.pdf"
+      priority: 100
+
     - id: sg_model_ai_gov_genai_2024
       title: "Model AI Governance Framework for Generative AI (2024)"
-      authority: "AI Verify Foundation (Singapore)"
+      authority: "AI Verify Foundation"
       type: "framework"
       url: "https://aiverifyfoundation.sg/wp-content/uploads/2024/06/Model-AI-Governance-Framework-for-Generative-AI-19-June-2024.pdf"
+      priority: 95
+
+    - id: unesco_ai_ethics
+      title: "UNESCO Recommendation on the Ethics of AI"
+      authority: "UNESCO"
+      type: "international_guideline"
+      url: "https://www.unesco.org/en/artificial-intelligence/recommendation-ethics"
+      priority: 80
+
+  CA:
+    - id: ca_aida_companion
+      title: "Artificial Intelligence and Data Act (AIDA) — Companion Document"
+      authority: "Innovation, Science and Economic Development Canada"
+      type: "guidance"
+      url: "https://ised-isde.canada.ca/site/innovation-better-canada/en/artificial-intelligence-and-data-act-aida-companion-document"
       priority: 100
+
+    - id: ca_bill_c27
+      title: "Bill C-27 (includes AIDA)"
+      authority: "Parliament of Canada"
+      type: "law"
+      url: "https://www.parl.ca/legisinfo/en/bill/44-1/c-27"
+      priority: 95
+
+    - id: unesco_ai_ethics
+      title: "UNESCO Recommendation on the Ethics of AI"
+      authority: "UNESCO"
+      type: "international_guideline"
+      url: "https://www.unesco.org/en/artificial-intelligence/recommendation-ethics"
+      priority: 80
 
   AU:
     - id: au_ai_ethics_principles
-      title: "Australia's AI Ethics Principles"
-      authority: "Australian Government (industry.gov.au)"
+      title: "Australia’s AI Ethics Principles"
+      authority: "Australian Government"
       type: "principles"
       url: "https://www.industry.gov.au/publications/australias-ai-ethics-principles"
       priority: 90
-    - id: au_implement_ethics_principles_gov
-      title: "Implementing Australia's AI Ethics Principles in government"
-      authority: "Australian Government (finance.gov.au)"
-      type: "guidance"
-      url: "https://www.finance.gov.au/government/public-data/data-and-digital-ministers-meeting/national-framework-assurance-artificial-intelligence-government/implementing-australias-ai-ethics-principles-government"
+
+    - id: au_ai_in_gov_policy
+      title: "Policy for the Responsible Use of AI in Government"
+      authority: "Australian Government"
+      type: "policy"
+      url: "https://www.digital.gov.au/ai/ai-in-government-policy"
+      priority: 100
+
+    - id: au_ai_assurance_framework
+      title: "National Framework for the Assurance of AI in Government"
+      authority: "Australian Government"
+      type: "framework"
+      url: "https://www.finance.gov.au/.../national-framework-assurance-of-ai-in-government.pdf"
+      priority: 100
+
+    - id: oaic_ai_products_guidance
+      title: "OAIC Guidance on Privacy & AI Products"
+      authority: "Office of the Australian Information Commissioner"
+      type: "regulator_guidance"
+      url: "https://www.oaic.gov.au/privacy/privacy-guidance-for-organisations-and-government-agencies/guidance-on-privacy-and-the-use-of-commercially-available-ai-products"
+      priority: 100
+
+  KR:
+    - id: kr_ai_ethics_guidelines
+      title: "Korea AI Ethics Guidelines"
+      authority: "South Korean Government"
+      type: "guideline"
+      url: "https://www.oecd.ai/en/dashboards/policy-initiatives/the-national-guidelines-for-ai-ethics-6636" 
+      priority: 95
+
+    - id: unesco_ai_ethics
+      title: "UNESCO Recommendation on the Ethics of AI"
+      authority: "UNESCO"
+      type: "international_guideline"
+      url: "https://www.unesco.org/en/artificial-intelligence/recommendation-ethics"
       priority: 80
 
-  INTL:
-    - id: oecd_ai_principles
-      title: "OECD AI Principles"
-      authority: "OECD"
-      type: "principles"
-      url: "https://www.oecd.org/en/topics/sub-issues/ai-principles.html"
-      priority: 70
+  FR:
+    - id: fr_ai_strategy
+      title: "France AI Strategy & Governance Documents"
+      authority: "French Government"
+      type: "policy"
+      url: "https://www.gouvernement.fr/en/artificial-intelligence"
+      priority: 90
+
+    - id: eu_ai_act_2024_1689
+      title: "EU AI Act"
+      authority: "European Union"
+      type: "law"
+      url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng"
+      priority: 100
+
+  DE:
+    - id: de_ai_governance_policy
+      title: "Germany AI Governance Policy Overview"
+      authority: "German Government"
+      type: "policy"
+      url: "https://www.bmwi.de/Redaktion/EN/Dossier/artificial-intelligence.html"
+      priority: 90
+
+    - id: eu_ai_act_2024_1689
+      title: "EU AI Act"
+      authority: "European Union"
+      type: "law"
+      url: "https://eur-lex.europa.eu/eli/reg/2024/1689/oj/eng"
+      priority: 100
