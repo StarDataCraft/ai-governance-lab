@@ -1,0 +1,127 @@
+version: "0.1"
+
+risk_categories:
+  regulatory:
+    label: "Regulatory"
+    description: "Legal/regulatory compliance risks (e.g., GDPR, sector rules, AI Act obligations)."
+    keywords:
+      - "gdpr"
+      - "privacy law"
+      - "compliance"
+      - "consent"
+      - "regulator"
+      - "audit"
+      - "financial regulation"
+      - "ai act"
+      - "sox"
+      - "ifrs"
+
+  ethical:
+    label: "Ethical"
+    description: "Fairness, discrimination, transparency, explainability, human rights concerns."
+    keywords:
+      - "bias"
+      - "discrimination"
+      - "fairness"
+      - "protected group"
+      - "explain"
+      - "explainability"
+      - "transparency"
+      - "accountability"
+
+  operational:
+    label: "Operational"
+    description: "Model lifecycle, monitoring, drift, reliability, human-in-the-loop process failures."
+    keywords:
+      - "drift"
+      - "monitoring"
+      - "incident"
+      - "outage"
+      - "sla"
+      - "reliability"
+      - "fallback"
+      - "human review"
+      - "handover"
+      - "runbook"
+
+  security:
+    label: "Security"
+    description: "Adversarial threats, data leakage, prompt injection, model extraction, abuse."
+    keywords:
+      - "prompt injection"
+      - "data leakage"
+      - "exfiltration"
+      - "model extraction"
+      - "jailbreak"
+      - "adversarial"
+      - "security"
+      - "abuse"
+      - "unauthorized"
+
+  strategic:
+    label: "Strategic"
+    description: "Reputation, vendor lock-in, over-automation, misalignment with business strategy."
+    keywords:
+      - "vendor lock-in"
+      - "reputation"
+      - "brand"
+      - "strategic"
+      - "over-reliance"
+      - "automation"
+      - "public backlash"
+
+dimensions:
+  severity:
+    levels: ["Low", "Medium", "High"]
+  likelihood:
+    levels: ["Low", "Medium", "High"]
+  detectability:
+    levels: ["Low", "Medium", "High"]
+
+scoring:
+  # Simple rule-based defaults. You can tune later.
+  base_score: 0.10
+  keyword_hit_score: 0.18
+  max_score: 1.00
+
+severity_rules:
+  high_if_contains_any:
+    - "credit"
+    - "loan"
+    - "medical"
+    - "diagnosis"
+    - "biometric"
+    - "children"
+    - "employment"
+    - "surveillance"
+    - "criminal"
+    - "insurance"
+  medium_if_contains_any:
+    - "personal data"
+    - "pii"
+    - "customer"
+    - "financial"
+    - "moderation"
+    - "ranking"
+
+likelihood_rules:
+  high_if_contains_any:
+    - "public"
+    - "external"
+    - "user-generated"
+    - "scale"
+    - "automated"
+  medium_if_contains_any:
+    - "internal"
+    - "pilot"
+    - "limited"
+
+detectability_rules:
+  low_if_contains_any:
+    - "black box"
+    - "no logging"
+    - "no monitoring"
+    - "opaque"
+  medium_if_contains_any:
+    - "some logging"
+    - "manual review"
