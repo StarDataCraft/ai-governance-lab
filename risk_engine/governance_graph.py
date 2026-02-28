@@ -127,3 +127,90 @@ class GovernanceGraph:
             level = "HIGH"
 
         return float(score), level
+
+    # -----------------------------
+    # Executive summary generator
+    # -----------------------------
+
+    def generate_executive_summary(
+        self,
+        activated: Dict,
+        activated_controls: set,
+        missing_controls: set,
+        score: float,
+        level: str,
+        threshold: float,
+    ) -> str:
+
+        lines = []
+
+        lines.append("Executive Risk Assessment Summary\n")
+
+        lines.append(
+            f"The dynamic similarity threshold applied was {threshold:.3f}, "
+            "which filtered clause-risk relationships based on relative semantic strength."
+        )
+
+        if activated:
+            lines.append(
+                f"\nA total of {len(activated)} primary risk domains were activated."
+            )
+
+            for rid, entries in activated.items():
+                weight = self.risk_weights.get(rid, 1)
+
+                avg_sim = sum(sim for _, sim in entries) / len(entries)
+
+                lines.append(
+                    f"- {rid.replace('_', ' ').title()} "
+                    f"(avg similarity {avg_sim:.3f}, severity weight {weight})"
+                )
+
+        else:
+            lines.append(
+                "\nNo material risk domains exceeded the semantic activation threshold."
+            )
+
+        lines.append(
+            f"\nThe weighted composite risk score is {score:.2f}, "
+            f"resulting in an overall risk level classified as {level}."
+        )
+
+        coverage_ratio = (
+            len(activated_controls) /
+            (len(activated_controls) + len(missing_controls))
+            if (len(activated_controls) + len(missing_controls)) > 0 else 0
+        )
+
+        lines.append(
+            f"\nControl coverage ratio is {coverage_ratio:.2f}. "
+        )
+
+        if missing_controls:
+            lines.append(
+                "The following governance controls are currently not triggered "
+                f"and may represent residual exposure: {', '.join(missing_controls)}."
+            )
+        else:
+            lines.append(
+                "All defined governance controls are activated, "
+                "indicating comprehensive mitigation coverage."
+            )
+
+        if level == "LOW":
+            lines.append(
+                "\nInterpretation: The structural risk profile is currently limited "
+                "and largely mitigated by existing controls."
+            )
+        elif level == "MEDIUM":
+            lines.append(
+                "\nInterpretation: The risk profile warrants enhanced monitoring "
+                "and potentially additional governance safeguards."
+            )
+        else:
+            lines.append(
+                "\nInterpretation: The system exhibits elevated structural risk. "
+                "Immediate governance reinforcement and oversight escalation are recommended."
+            )
+
+        return "\n".join(lines)
