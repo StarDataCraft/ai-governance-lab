@@ -10,7 +10,11 @@ class GovernanceGraph:
     def __init__(self):
         self.G = nx.DiGraph()
         self.risk_embeddings = {}
-        self.similarity_threshold = 0.75  # 提高阈值
+        self.risk_weights = {
+            "privacy_risk": 3,
+            "security_risk": 2,
+            "hallucination_risk": 2
+        }
 
     def add_risk(self, risk_id: str, description: str, embedding: np.ndarray):
         self.G.add_node(risk_id, type="risk", description=description)
@@ -25,24 +29,68 @@ class GovernanceGraph:
     def link_risk_to_control(self, risk_id: str, control_id: str):
         self.G.add_edge(risk_id, control_id, relation="requires")
 
-    def map_clause_to_risks(
+    # -----------------------------
+    # Similarity matrix
+    # -----------------------------
+
+    def compute_similarity_matrix(self, clause_embeddings):
+
+        risk_ids = list(self.risk_embeddings.keys())
+        risk_matrix = np.array([self.risk_embeddings[r] for r in risk_ids])
+
+        sim_matrix = clause_embeddings @ risk_matrix.T
+
+        return risk_ids, sim_matrix
+
+    # -----------------------------
+    # Dynamic threshold
+    # -----------------------------
+
+    def dynamic_threshold(self, sim_matrix):
+
+        mean = np.mean(sim_matrix)
+        std = np.std(sim_matrix)
+
+        return float(mean + 0.5 * std)
+
+    # -----------------------------
+    # Risk activation
+    # -----------------------------
+
+    def activate_risks(
         self,
-        clause_id: str,
-        clause_embedding: np.ndarray,
-    ) -> List[Tuple[str, float]]:
+        clause_ids,
+        clause_embeddings,
+        threshold
+    ):
 
-        activated = []
+        risk_ids, sim_matrix = self.compute_similarity_matrix(clause_embeddings)
 
-        for risk_id, risk_emb in self.risk_embeddings.items():
-            sim = float(np.dot(clause_embedding, risk_emb))
+        activated = {}
+        explanations = []
 
-            if sim > self.similarity_threshold:
-                self.G.add_edge(clause_id, risk_id, relation="addresses")
-                activated.append((risk_id, sim))
+        for i, cid in enumerate(clause_ids):
+            for j, rid in enumerate(risk_ids):
 
-        return activated
+                sim = float(sim_matrix[i, j])
 
-    def propagate(self) -> Dict:
+                if sim > threshold:
+
+                    self.G.add_edge(cid, rid, relation="addresses")
+
+                    activated.setdefault(rid, []).append((cid, sim))
+
+                    explanations.append(
+                        f"{cid} triggered {rid} (similarity={sim:.3f})"
+                    )
+
+        return activated, explanations
+
+    # -----------------------------
+    # Propagation
+    # -----------------------------
+
+    def propagate(self):
 
         activated_risks = set()
         activated_controls = set()
@@ -57,44 +105,25 @@ class GovernanceGraph:
                             if self.G.nodes[control]["type"] == "control":
                                 activated_controls.add(control)
 
-        return {
-            "risks": list(activated_risks),
-            "controls": list(activated_controls),
-        }
+        return activated_risks, activated_controls
 
     # -----------------------------
-    # Centrality
+    # Weighted risk score
     # -----------------------------
 
-    def compute_centrality(self):
+    def weighted_risk_score(self, activated):
 
-        degree = nx.degree_centrality(self.G)
-        between = nx.betweenness_centrality(self.G)
+        score = 0
 
-        return {
-            "degree": degree,
-            "betweenness": between
-        }
+        for rid, entries in activated.items():
+            weight = self.risk_weights.get(rid, 1)
+            for _, sim in entries:
+                score += sim * weight
 
-    # -----------------------------
-    # Risk clustering
-    # -----------------------------
+        level = "LOW"
+        if score > 6:
+            level = "MEDIUM"
+        if score > 12:
+            level = "HIGH"
 
-    def cluster_risks(self, n_clusters=2):
-
-        if len(self.risk_embeddings) < n_clusters:
-            return {}
-
-        risk_ids = list(self.risk_embeddings.keys())
-        emb_matrix = np.array(
-            [self.risk_embeddings[r] for r in risk_ids]
-        )
-
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-        labels = kmeans.fit_predict(emb_matrix)
-
-        clusters = {}
-        for rid, label in zip(risk_ids, labels):
-            clusters.setdefault(int(label), []).append(rid)
-
-        return clusters
+        return float(score), level
