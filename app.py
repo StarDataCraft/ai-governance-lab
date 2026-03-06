@@ -322,16 +322,10 @@ def _try_parse_json_array(text: str) -> Optional[List[Dict[str, Any]]]:
 def load_clauses_any(path_json: str, path_jsonl: str) -> List[Dict[str, Any]]:
     """
     Load clauses from either:
-      - clauses.json: JSON array
-      - clauses.jsonl: one JSON dict per line (skips blanks)
+      - clauses.jsonl: preferred if exists
+      - clauses.json: fallback JSON array
     Also tolerant to the common mistake: dumping a JSON array into .jsonl file.
     """
-    if os.path.exists(path_json):
-        with open(path_json, "r", encoding="utf-8") as f:
-            arr = json.load(f)
-        if not isinstance(arr, list):
-            raise ValueError(f"{path_json} must be a JSON array.")
-        return [c for c in arr if isinstance(c, dict)]
 
     if os.path.exists(path_jsonl):
         with open(path_jsonl, "r", encoding="utf-8") as f:
@@ -347,19 +341,16 @@ def load_clauses_any(path_json: str, path_jsonl: str) -> List[Dict[str, Any]]:
             line = line.strip()
             if not line:
                 continue
-            # ignore trailing commas or list markers
             line = line.rstrip(",")
+
             try:
                 obj = json.loads(line)
                 if isinstance(obj, dict):
                     clauses.append(obj)
             except json.JSONDecodeError:
-                # tolerate lines like "[" or "]" from accidental array formatting
                 if line in ("[", "]"):
                     continue
-                # last resort: try to repair a bit
-                repaired = line
-                repaired = re.sub(r",\s*}$", "}", repaired)
+                repaired = re.sub(r",\s*}$", "}", line)
                 try:
                     obj = json.loads(repaired)
                     if isinstance(obj, dict):
@@ -367,13 +358,19 @@ def load_clauses_any(path_json: str, path_jsonl: str) -> List[Dict[str, Any]]:
                 except Exception:
                     raise ValueError(
                         f"Invalid JSONL line in {path_jsonl}:\n{line}\n\n"
-                        f"Tip: Prefer clauses.json (JSON array)."
+                        f"Tip: Prefer one JSON object per line in clauses.jsonl."
                     )
         return clauses
 
+    if os.path.exists(path_json):
+        with open(path_json, "r", encoding="utf-8") as f:
+            arr = json.load(f)
+        if not isinstance(arr, list):
+            raise ValueError(f"{path_json} must be a JSON array.")
+        return [c for c in arr if isinstance(c, dict)]
+
     return []
-
-
+    
 def validate_and_sanitize_clauses(clauses: List[Dict[str, Any]], jurisdiction: str) -> List[Dict[str, Any]]:
     out = []
     for c in clauses:
