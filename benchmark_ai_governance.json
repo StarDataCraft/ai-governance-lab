@@ -1,0 +1,226 @@
+[
+{
+"id":"case_01",
+"use_case":"LLM-based customer support chatbot processing customer personal data including names, emails, and purchase history.",
+"expected_risks":["privacy_risk","security_risk","hallucination_risk"],
+"expected_controls":["data_minimisation","access_control","human_review"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"JP"
+},
+
+{
+"id":"case_02",
+"use_case":"Internal AI assistant summarizing employee emails and documents stored in company systems.",
+"expected_risks":["privacy_risk","security_risk"],
+"expected_controls":["access_control","data_minimisation"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"JP"
+},
+
+{
+"id":"case_03",
+"use_case":"Public-facing LLM application that may be vulnerable to prompt injection attacks.",
+"expected_risks":["security_risk"],
+"expected_controls":["prompt_change_control","eval_monitoring"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"US"
+},
+
+{
+"id":"case_04",
+"use_case":"AI chatbot answering legal questions without human supervision.",
+"expected_risks":["hallucination_risk","transparency_risk"],
+"expected_controls":["human_review","transparency_notice"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_05",
+"use_case":"AI tool generating automated financial advice for retail investors.",
+"expected_risks":["hallucination_risk","accountability_risk"],
+"expected_controls":["human_review","eval_monitoring"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"US"
+},
+
+{
+"id":"case_06",
+"use_case":"AI system screening job applicants and ranking candidates automatically.",
+"expected_risks":["bias_risk","transparency_risk"],
+"expected_controls":["fairness_eval","transparency_notice"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_07",
+"use_case":"AI system recommending employee promotions based on performance data.",
+"expected_risks":["bias_risk","accountability_risk"],
+"expected_controls":["fairness_eval","human_review"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_08",
+"use_case":"AI model predicting loan approval using customer financial history.",
+"expected_risks":["bias_risk","privacy_risk"],
+"expected_controls":["fairness_eval","data_minimisation"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"US"
+},
+
+{
+"id":"case_09",
+"use_case":"AI-based video interview analysis evaluating facial expressions.",
+"expected_risks":["bias_risk","transparency_risk","privacy_risk"],
+"expected_controls":["fairness_eval","transparency_notice"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_10",
+"use_case":"AI diagnostic assistant suggesting medical conditions based on symptoms.",
+"expected_risks":["hallucination_risk","accountability_risk"],
+"expected_controls":["human_review","eval_monitoring"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_11",
+"use_case":"AI triage system prioritizing emergency patients in hospitals.",
+"expected_risks":["hallucination_risk","accountability_risk"],
+"expected_controls":["human_review","incident_playbook"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_12",
+"use_case":"AI system moderating user-generated content on social media platforms.",
+"expected_risks":["bias_risk","transparency_risk"],
+"expected_controls":["fairness_eval","transparency_notice"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"US"
+},
+
+{
+"id":"case_13",
+"use_case":"AI detecting abusive language in online communities.",
+"expected_risks":["bias_risk"],
+"expected_controls":["fairness_eval"],
+"expected_risk_level":"LOW",
+"jurisdiction":"US"
+},
+
+{
+"id":"case_14",
+"use_case":"AI system controlling industrial machinery in manufacturing.",
+"expected_risks":["incident_risk","accountability_risk"],
+"expected_controls":["incident_playbook","human_review"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"JP"
+},
+
+{
+"id":"case_15",
+"use_case":"Autonomous vehicle decision system prioritizing pedestrian safety.",
+"expected_risks":["incident_risk","accountability_risk"],
+"expected_controls":["incident_playbook","eval_monitoring"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_16",
+"use_case":"AI system generating marketing content automatically.",
+"expected_risks":["hallucination_risk"],
+"expected_controls":["eval_monitoring"],
+"expected_risk_level":"LOW",
+"jurisdiction":"US"
+},
+
+{
+"id":"case_17",
+"use_case":"AI summarization tool used in internal corporate reports.",
+"expected_risks":["hallucination_risk"],
+"expected_controls":["human_review"],
+"expected_risk_level":"LOW",
+"jurisdiction":"JP"
+},
+
+{
+"id":"case_18",
+"use_case":"AI generating product recommendations based on customer purchase history.",
+"expected_risks":["privacy_risk"],
+"expected_controls":["data_minimisation"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_19",
+"use_case":"AI assistant connected to company knowledge base answering employee questions.",
+"expected_risks":["security_risk"],
+"expected_controls":["access_control"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"JP"
+},
+
+{
+"id":"case_20",
+"use_case":"AI tool generating legal document drafts for lawyers.",
+"expected_risks":["hallucination_risk","accountability_risk"],
+"expected_controls":["human_review"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"US"
+},
+
+{
+"id":"case_21",
+"use_case":"AI system analyzing surveillance footage for security monitoring.",
+"expected_risks":["privacy_risk","bias_risk"],
+"expected_controls":["data_minimisation","fairness_eval"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_22",
+"use_case":"AI used for automated insurance claim evaluation.",
+"expected_risks":["bias_risk","accountability_risk"],
+"expected_controls":["fairness_eval","human_review"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"EU"
+},
+
+{
+"id":"case_23",
+"use_case":"AI system generating automated customer service emails.",
+"expected_risks":["hallucination_risk"],
+"expected_controls":["eval_monitoring"],
+"expected_risk_level":"LOW",
+"jurisdiction":"JP"
+},
+
+{
+"id":"case_24",
+"use_case":"AI analyzing employee productivity data for management dashboards.",
+"expected_risks":["privacy_risk","accountability_risk"],
+"expected_controls":["data_minimisation","transparency_notice"],
+"expected_risk_level":"MEDIUM",
+"jurisdiction":"JP"
+},
+
+{
+"id":"case_25",
+"use_case":"Organization deploying multiple AI systems without centralized governance.",
+"expected_risks":["accountability_risk","transparency_risk"],
+"expected_controls":["transparency_notice","prompt_change_control"],
+"expected_risk_level":"HIGH",
+"jurisdiction":"US"
+}
+]
