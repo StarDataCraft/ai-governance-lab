@@ -54,6 +54,29 @@ from risk_engine.i18n import t
 from risk_engine.graph_viz import draw_governance_graph
 
 # =========================
+# Benchmark loader
+# =========================
+
+def load_benchmark_cases(path: str) -> List[Dict[str, Any]]:
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        return []
+    return [x for x in data if isinstance(x, dict)]
+
+def get_benchmark_options(
+    benchmark_cases: List[Dict[str, Any]],
+    jurisdiction: str,
+) -> List[Dict[str, Any]]:
+    filtered = []
+    for case in benchmark_cases:
+        case_jur = str(case.get("jurisdiction", "")).strip().upper()
+        if case_jur == jurisdiction.upper():
+            filtered.append(case)
+    return filtered
+# =========================
 # Explainability Layer (v0)
 # =========================
 
@@ -1137,7 +1160,7 @@ def build_next_steps(
 # =========================
 st.set_page_config(page_title="AI Governance Lab — Explainability Finder", layout="wide")
 BENCHMARK_PATH = "benchmark_ai_governance.json"
-benchmark_cases_all = load_benchmark_cases(BENCHMARK_PATH)
+benchmark_cases = load_benchmark_cases(BENCHMARK_PATH)
 
 # language selector
 lang_label_map = {"English": "en", "日本語": "ja"}
@@ -1161,10 +1184,29 @@ with st.sidebar:
         help="Choose where governance evidence should come from. Add your own corpus under law_corpus/<JUR>/clauses.json.",
     )
 
-    # benchmark selector
+    # =========================
+    # Benchmark selector
+    # =========================
+    st.header(t(lang, "settings"))
+
+    jurisdiction = st.selectbox(
+        t(lang, "jurisdiction"),
+        ["JP", "AU", "EU", "US", "UK", "CA"],
+        index=0,
+        help="Choose where governance evidence should come from. Add your own corpus under law_corpus/<JUR>/clauses.json.",
+    )
+    
+    # =========================
+    # Benchmark selector
+    # =========================
     benchmark_cases = get_benchmark_options(benchmark_cases_all, jurisdiction)
     
-    benchmark_mode = st.checkbox("Use benchmark case", value=False)
+    st.subheader("Benchmark")
+    
+    benchmark_mode = st.checkbox(
+        "Use benchmark case",
+        value=False
+    )
     
     selected_benchmark_case = None
     default_use_case = "LLM-based customer support chatbot processing personal data; risks include prompt injection, data leakage, and hallucinations."
@@ -1174,14 +1216,24 @@ with st.sidebar:
             f"{c.get('id', 'unknown')} | {c.get('use_case', '')[:80]}"
             for c in benchmark_cases
         ]
+    
         selected_label = st.selectbox(
             "Benchmark case",
             options=benchmark_labels,
             index=0,
         )
+    
         selected_idx = benchmark_labels.index(selected_label)
         selected_benchmark_case = benchmark_cases[selected_idx]
         default_use_case = selected_benchmark_case.get("use_case", default_use_case)
+    
+    elif benchmark_mode and not benchmark_cases:
+        st.info(f"No benchmark cases found for jurisdiction: {jurisdiction}")
+    
+    default_use_case = "LLM-based customer support chatbot processing personal data."
+
+    if selected_case:
+        default_use_case = selected_case.get("use_case", default_use_case)
     
     use_case = st.text_area(
         t(lang, "use_case"),
@@ -1198,12 +1250,10 @@ with st.sidebar:
                 "expected_risk_level": selected_benchmark_case.get("expected_risk_level", ""),
                 "jurisdiction": selected_benchmark_case.get("jurisdiction", ""),
             })
-    elif benchmark_mode and not benchmark_cases:
-        st.info(f"No benchmark cases found for jurisdiction: {jurisdiction}")
-
+    
     st.subheader(t(lang, "semantic_evidence"))
     top_k = st.slider(t(lang, "topk_clauses"), 3, 12, 5)
-
+    
     model_name = st.selectbox(
         t(lang, "embedding_model"),
         [
