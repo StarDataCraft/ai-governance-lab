@@ -174,6 +174,13 @@ def build_explainability_brief(
         action_label = "**4) コントロールとギャップ（次に何をするか）**"
         interp_label = "**解釈（このツールが本当に売っているもの）**"
         legal_note = "*(これは再現可能な意思決定トレースであり、法的意見ではありません。)*"
+        no_evidence = "- まだ証拠が一致していません（条項を追加するか、検索条件を調整してください）。"
+        no_activation = "- 発火した詳細はありません。"
+        interpretation = (
+            "このツールは単なるコンプライアンス・チェックリストではありません。"
+            "組織内の承認、監査対応、インシデント振り返り、経営向け説明に再利用できる"
+            "『再現可能な意思決定トレース』を提供します。"
+        )
     else:
         heading = f"### Explainability Narrative / Decision Trace (Jurisdiction: {jurisdiction})"
         use_case_label = "**Use case**"
@@ -183,7 +190,14 @@ def build_explainability_brief(
         action_label = "**4) Controls + coverage gaps (what to do next)**"
         interp_label = "**Interpretation (what this tool really sells)**"
         legal_note = "*(This is a reproducible decision trace, not a legal opinion.)*"
-    
+        no_evidence = "- No evidence matched yet (add more clauses or adjust retrieval)."
+        no_activation = "- No activation details available."
+        interpretation = (
+            "This tool is not merely a compliance checklist. It produces an "
+            "*organizationally explainable decision trace* that can be reused for internal approvals, "
+            "audit readiness, incident retrospectives, and governance communication."
+        )
+
     top_evidence = clause_matches[:5] if clause_matches else []
 
     evidence_lines = []
@@ -197,7 +211,6 @@ def build_explainability_brief(
         fw_s = f" · {fw}" if fw else ""
         evidence_lines.append(f"[E{i}] {cid} — {title}{fw_s} (sim={sim_s}) — {url}".strip())
 
-    # why risks fired: top 10 edges by similarity
     why = sorted(
         (activation_details or []),
         key=lambda x: float(x.get("similarity", 0.0) or 0.0),
@@ -212,34 +225,30 @@ def build_explainability_brief(
     thr_s = f"{dynamic_threshold:.3f}" if isinstance(dynamic_threshold, (int, float)) else "n/a"
 
     brief = f"""
-### Explainability Narrative / Decision Trace (Jurisdiction: {jurisdiction})
+{heading}
 
-**Use case**  
+{use_case_label}  
 {use_case}
 
-**1) Evidence chain (what we relied on)**  
-{chr(10).join(evidence_lines) if evidence_lines else "- No evidence matched yet (add more clauses or adjust retrieval)."}
+{evidence_label}  
+{chr(10).join(evidence_lines) if evidence_lines else no_evidence}
 
-**2) Transparent reasoning (why risks activated)**  
+{reasoning_label}  
 Dynamic threshold used: **{thr_s}**  
-{chr(10).join(why_lines) if why_lines else "- No activation details available."}
+{chr(10).join(why_lines) if why_lines else no_activation}
 
-**3) Risk posture (what this means operationally)**  
+{posture_label}  
 Activated risks: **{", ".join(activated_risks) if activated_risks else "None"}**  
 Weighted risk score: **{weighted_risk_score:.2f}** → **{risk_level}**  
-*(This is a reproducible decision trace, not a legal opinion.)*
+{legal_note}
 
-**4) Controls + coverage gaps (what to do next)**  
+{action_label}  
 Recommended controls: **{", ".join(recommended_controls) if recommended_controls else "None"}**  
 Coverage ratio: **{coverage_ratio:.2f}**  
 Missing controls: **{", ".join(missing_controls) if missing_controls else "None"}**
 
-**Interpretation (what this tool really sells)**  
-This tool is not merely a compliance checklist. It produces an *organizationally explainable decision trace* that can be reused for:
-- internal approvals (who decided what, based on which evidence),
-- audit readiness (evidence links + thresholds + mappings),
-- incident retrospectives (which signals were missed, which controls were absent),
-- governance communication (executive narrative that is defensible and reproducible).
+{interp_label}  
+{interpretation}
 """
     return brief.strip()
 
@@ -885,6 +894,38 @@ def fetch_rss_items(url: str, limit: int = 10) -> List[Dict[str, Any]]:
         })
     return items
 
+def build_next_steps(
+    lang: str,
+    activated_risks: List[str],
+    missing_controls: List[str],
+    coverage_ratio: float,
+    evidence_count: int,
+    top_central: List[Tuple[str, float]],
+) -> str:
+    lines: List[str] = []
+    lines.append(f"**{t(lang, 'ns_header')}**")
+
+    if missing_controls:
+        lines.append(f"- {t(lang, 'ns_add_controls')}")
+        lines.append(f"  - Missing: `{', '.join(missing_controls)}`")
+
+    lines.append(f"- {t(lang, 'ns_monitoring')}")
+
+    if evidence_count < 5:
+        lines.append(f"- {t(lang, 'ns_expand_evidence')}")
+
+    if coverage_ratio < 0.5 or coverage_ratio > 0.95:
+        lines.append(f"- {t(lang, 'ns_review_threshold')}")
+
+    if activated_risks:
+        lines.append(f"- {t(lang, 'ns_assign_owner')}")
+        lines.append(f"  - Activated: `{', '.join(activated_risks)}`")
+
+    if top_central:
+        tops = ", ".join([f"{n}({v:.2f})" for n, v in top_central[:5]])
+        lines.append(f"- Leverage points: {tops}")
+
+    return "\n".join(lines)
 
 # =========================
 # UI
@@ -952,8 +993,18 @@ with st.sidebar:
     enable_rss = st.checkbox(t(lang, "fetch_rss"), value=True)
     recency_days = st.slider(t(lang, "recency_days"), 7, 60, 30)
     
+    extra_terms = st.text_input(
+        "Extra search terms (optional)",
+        value="AI Act OR guideline OR framework OR compliance",
+        help="Optional keywords added to the governance news search query.",
+    )
+    
     st.subheader("Corpus")
-    force_rebuild = st.checkbox("Force rebuild embeddings cache", value=False, help="Use if you updated clauses.json.")
+    force_rebuild = st.checkbox(
+        "Force rebuild embeddings cache",
+        value=False,
+        help="Use if you updated clauses.json."
+    )
 
 
 # Load corpus
@@ -1126,7 +1177,6 @@ with left:
         else:
             st.info("No RSS items found (try different terms).")
 
-
 with right:
     st.subheader("🧭 " + t(lang, "explainability"))
     score_obj = compute_explainability_score(
@@ -1139,10 +1189,10 @@ with right:
     )
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Explainability Score", f"{score_obj.total:.2f}", score_obj.label)
-    c2.metric("Evidence Trace", f"{score_obj.components['evidence_trace']:.2f}")
-    c3.metric("Reasoning Transparency", f"{score_obj.components['reasoning_transparency']:.2f}")
-    c4.metric("Control Coverage", f"{score_obj.components['control_coverage']:.2f}")
+    c1.metric(t(lang, "explainability_score"), f"{score_obj.total:.2f}", score_obj.label)
+    c2.metric(t(lang, "evidence_trace"), f"{score_obj.components['evidence_trace']:.2f}")
+    c3.metric(t(lang, "reasoning_transparency"), f"{score_obj.components['reasoning_transparency']:.2f}")
+    c4.metric(t(lang, "control_coverage"), f"{score_obj.components['control_coverage']:.2f}")
 
     with st.expander("Why this score (deterministic)", expanded=True):
         st.write(score_obj.narrative)
@@ -1163,6 +1213,7 @@ with right:
         missing_controls=missing_controls,
     )
     st.markdown(brief)
+
     st.subheader("✅ " + t(lang, "next_steps"))
 
     top_central = sorted(
@@ -1181,35 +1232,4 @@ with right:
     )
     st.markdown(ns)
     
-    def build_next_steps(
-        lang: str,
-        activated_risks: List[str],
-        missing_controls: List[str],
-        coverage_ratio: float,
-        evidence_count: int,
-        top_central: List[Tuple[str, float]],
-    ) -> str:
-        lines: List[str] = []
-        lines.append(f"**{t(lang, 'ns_header')}**")
     
-        if missing_controls:
-            lines.append(f"- {t(lang, 'ns_add_controls')}")
-            lines.append(f"  - Missing: `{', '.join(missing_controls)}`")
-    
-        lines.append(f"- {t(lang, 'ns_monitoring')}")
-    
-        if evidence_count < 5:
-            lines.append(f"- {t(lang, 'ns_expand_evidence')}")
-    
-        if coverage_ratio < 0.5 or coverage_ratio > 0.95:
-            lines.append(f"- {t(lang, 'ns_review_threshold')}")
-    
-        if activated_risks:
-            lines.append(f"- {t(lang, 'ns_assign_owner')}")
-            lines.append(f"  - Activated: `{', '.join(activated_risks)}`")
-    
-        if top_central:
-            tops = ", ".join([f"{n}({v:.2f})" for n, v in top_central[:5]])
-            lines.append(f"- Leverage points: {tops}")
-    
-        return "\n".join(lines)
