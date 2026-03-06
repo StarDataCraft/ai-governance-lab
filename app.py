@@ -1152,10 +1152,51 @@ def build_next_steps(
 
         return "\n".join(lines)
 
+def load_benchmark_cases(path: str) -> List[Dict[str, Any]]:
+    if not os.path.exists(path):
+        return []
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if isinstance(data, list):
+            return [x for x in data if isinstance(x, dict)]
+        return []
+    except Exception:
+        return []
+
+
+def get_benchmark_options(
+    benchmark_cases: List[Dict[str, Any]],
+    jurisdiction: str,
+) -> List[Dict[str, Any]]:
+    filtered = []
+    for case in benchmark_cases:
+        case_jur = str(case.get("jurisdiction", "")).strip().upper()
+        if case_jur == jurisdiction.upper():
+            filtered.append(case)
+    return filtered
+    
 # =========================
 # UI
 # =========================
 st.set_page_config(page_title="AI Governance Lab — Explainability Finder", layout="wide")
+
+# benchmark dataset
+BENCHMARK_PATH = "benchmark_ai_governance.json"
+benchmark_cases_all = load_benchmark_cases(BENCHMARK_PATH)
+
+# language selector
+lang_label_map = {"English": "en", "日本語": "ja"}
+lang_ui = st.sidebar.selectbox(
+    "Language / 言語",
+    options=["English", "日本語"],
+    index=0,
+    key="sidebar_language_select",
+)
+lang = lang_label_map[lang_ui]
+
 BENCHMARK_PATH = "benchmark_ai_governance.json"
 benchmark_cases = load_benchmark_cases(BENCHMARK_PATH)
 
