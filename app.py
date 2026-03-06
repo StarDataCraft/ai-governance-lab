@@ -921,31 +921,216 @@ def build_next_steps(
     coverage_ratio: float,
     evidence_count: int,
     top_central: List[Tuple[str, float]],
+    risk_level: str,
+    recommended_controls: List[str],
 ) -> str:
-    lines: List[str] = []
-    lines.append(f"**{t(lang, 'ns_header')}**")
+    """
+    Build risk-driven next-step suggestions.
+    This is intentionally deterministic but should vary meaningfully across use cases.
+    """
 
-    if missing_controls:
-        lines.append(f"- {t(lang, 'ns_add_controls')}")
-        lines.append(f"  - Missing: `{', '.join(missing_controls)}`")
+    if lang == "ja":
+        header = "**次にやるべきこと（実行可能）**"
 
-    lines.append(f"- {t(lang, 'ns_monitoring')}")
+        risk_action_map = {
+            "privacy_risk": [
+                "個人情報の取得・保存・ログ出力の範囲を見直し、データ最小化を明文化する。",
+                "会話ログや埋め込みに対するアクセス権限を整理し、保持期間を設定する。",
+            ],
+            "security_risk": [
+                "プロンプトインジェクションや情報漏洩のシナリオを明示し、入力防御とアクセス制御を強化する。",
+                "運用上の攻撃面（外部接続、検索連携、内部文書参照）ごとに監視ポイントを決める。",
+            ],
+            "hallucination_risk": [
+                "高リスク出力については human review / fallback を導入し、誤回答時のエスカレーション手順を作る。",
+                "評価データセットを用意し、事前評価と継続監視の仕組みを作る。",
+            ],
+            "transparency_risk": [
+                "利用者向けに『AIが回答していること』『限界』『人間への引き継ぎ条件』を明確に表示する。",
+                "内部向けには、どの証拠からどの判断に至ったかを記録できる説明ログを整備する。",
+            ],
+            "accountability_risk": [
+                "誰が承認し、誰が運用し、誰が事故対応を持つのかを明確にし、責任分界を定義する。",
+                "変更管理・例外承認・定期レビューのルールを作り、意思決定を再利用可能な形で残す。",
+            ],
+            "bias_risk": [
+                "評価データの偏りや対象群ごとの差異を点検し、公平性評価を定例化する。",
+                "採用・与信・人事評価のような高影響用途では、人間レビューを外さない。",
+            ],
+            "incident_risk": [
+                "インシデント発生時の triage → rollback/fallback → 報告 → 振り返りの手順を整備する。",
+                "異常検知の閾値と、誰が止めるかを事前に決めておく。",
+            ],
+        }
 
-    if evidence_count < 5:
-        lines.append(f"- {t(lang, 'ns_expand_evidence')}")
+        control_action_map = {
+            "data_minimisation": "データ最小化と保持期間ルールを優先して整備する。",
+            "access_control": "ログ・モデル・社内データへのアクセス制御を優先して整備する。",
+            "human_review": "高影響出力に対する人手確認フローを優先して整備する。",
+            "eval_monitoring": "事前評価と継続監視の仕組みを優先して整備する。",
+            "prompt_change_control": "プロンプト／システム指示の変更管理を優先して整備する。",
+            "transparency_notice": "利用者向け説明と内部記録のテンプレートを優先して整備する。",
+            "incident_playbook": "AIインシデント対応手順を優先して整備する。",
+            "fairness_eval": "公平性評価と差分検証を優先して整備する。",
+        }
 
-    if coverage_ratio < 0.5 or coverage_ratio > 0.95:
-        lines.append(f"- {t(lang, 'ns_review_threshold')}")
+        intro = []
+        if risk_level == "HIGH":
+            intro.append("現在のリスク水準は高いため、まずは高影響リスクへの即応策を優先する。")
+        elif risk_level == "MEDIUM":
+            intro.append("現在のリスク水準は中程度であり、運用ルールと監視体制の整備を優先する。")
+        else:
+            intro.append("現在のリスク水準は比較的低いが、将来の拡張を見据えて最小限の統制を先に整える。")
 
-    if activated_risks:
-        lines.append(f"- {t(lang, 'ns_assign_owner')}")
-        lines.append(f"  - Activated: `{', '.join(activated_risks)}`")
+        if evidence_count < 5:
+            intro.append("根拠条項が少ないため、まず証拠データセットの拡充が必要である。")
 
-    if top_central:
-        tops = ", ".join([f"{n}({v:.2f})" for n, v in top_central[:5]])
-        lines.append(f"- Leverage points: {tops}")
+        lines: List[str] = [header, ""]
 
-    return "\n".join(lines)
+        for s in intro:
+            lines.append(f"- {s}")
+
+        if activated_risks:
+            lines.append("")
+            lines.append("**リスク別の優先アクション**")
+            for rid in activated_risks:
+                actions = risk_action_map.get(rid, [])
+                if actions:
+                    lines.append(f"- `{rid}`")
+                    for a in actions[:2]:
+                        lines.append(f"  - {a}")
+
+        if missing_controls:
+            lines.append("")
+            lines.append("**不足コントロールへの対応**")
+            for ctrl in missing_controls:
+                msg = control_action_map.get(ctrl, f"`{ctrl}` を優先的に整備する。")
+                lines.append(f"- {msg}")
+
+        if recommended_controls:
+            lines.append("")
+            lines.append("**優先して運用に載せる統制**")
+            for ctrl in recommended_controls[:4]:
+                msg = control_action_map.get(ctrl, f"`{ctrl}` を実装・運用対象に含める。")
+                lines.append(f"- {msg}")
+
+        if coverage_ratio < 0.50:
+            lines.append("")
+            lines.append("- 現在の統制カバー率が低いため、まずは不足コントロールの補完を最優先にする。")
+        elif coverage_ratio > 0.95:
+            lines.append("")
+            lines.append("- 統制カバー率は高いが、過剰検出の可能性もあるため、しきい値やリスク定義の妥当性を見直す。")
+
+        # centrality: only show useful nodes
+        useful_central = [(n, v) for n, v in top_central if v > 0.0]
+        if useful_central:
+            lines.append("")
+            lines.append("**構造上の重要ノード**")
+            tops = ", ".join([f"{n}({v:.2f})" for n, v in useful_central[:5]])
+            lines.append(f"- {tops}")
+
+        return "\n".join(lines)
+
+    else:
+        header = "**What to do next (actionable)**"
+
+        risk_action_map = {
+            "privacy_risk": [
+                "Tighten data minimisation rules for collection, storage, and logging of personal data.",
+                "Define retention windows and access boundaries for logs, embeddings, and customer records.",
+            ],
+            "security_risk": [
+                "Document prompt injection / data exfiltration scenarios and strengthen input defenses plus access control.",
+                "Define monitoring points for the main attack surfaces: external inputs, retrieval connections, and internal data access.",
+            ],
+            "hallucination_risk": [
+                "Introduce human review / fallback for high-impact outputs and define escalation for incorrect answers.",
+                "Set up an evaluation dataset and continuous monitoring process for output reliability.",
+            ],
+            "transparency_risk": [
+                "Clearly disclose AI use, limitations, and handoff conditions to users.",
+                "Create internal explanation logs showing which evidence led to which governance conclusion.",
+            ],
+            "accountability_risk": [
+                "Clarify who approves, who operates, and who owns incident response for the AI system.",
+                "Create change control, exception approval, and recurring review rules so decisions become reusable artifacts.",
+            ],
+            "bias_risk": [
+                "Audit dataset and performance differences across groups, and operationalize fairness evaluation.",
+                "Keep human review in the loop for high-impact use cases such as hiring, lending, and promotion.",
+            ],
+            "incident_risk": [
+                "Create a triage → rollback/fallback → reporting → postmortem workflow for AI incidents.",
+                "Define escalation thresholds and assign explicit stop/go decision owners in advance.",
+            ],
+        }
+
+        control_action_map = {
+            "data_minimisation": "Prioritize data minimisation and retention controls.",
+            "access_control": "Prioritize access control for logs, models, and internal data.",
+            "human_review": "Prioritize a human review workflow for high-impact outputs.",
+            "eval_monitoring": "Prioritize pre-deployment evaluation and continuous monitoring.",
+            "prompt_change_control": "Prioritize change control for prompts and system instructions.",
+            "transparency_notice": "Prioritize user-facing disclosures and internal decision logging.",
+            "incident_playbook": "Prioritize an AI incident response playbook.",
+            "fairness_eval": "Prioritize fairness evaluation and disparity testing.",
+        }
+
+        intro = []
+        if risk_level == "HIGH":
+            intro.append("The current risk level is high, so immediate mitigation for high-impact risks should come first.")
+        elif risk_level == "MEDIUM":
+            intro.append("The current risk level is medium, so operational governance and monitoring should be the priority.")
+        else:
+            intro.append("The current risk level is relatively low, but baseline controls should still be established early.")
+
+        if evidence_count < 5:
+            intro.append("Evidence coverage is still thin, so expanding the clause dataset should be an early priority.")
+
+        lines: List[str] = [header, ""]
+
+        for s in intro:
+            lines.append(f"- {s}")
+
+        if activated_risks:
+            lines.append("")
+            lines.append("**Risk-specific priority actions**")
+            for rid in activated_risks:
+                actions = risk_action_map.get(rid, [])
+                if actions:
+                    lines.append(f"- `{rid}`")
+                    for a in actions[:2]:
+                        lines.append(f"  - {a}")
+
+        if missing_controls:
+            lines.append("")
+            lines.append("**Missing controls to add first**")
+            for ctrl in missing_controls:
+                msg = control_action_map.get(ctrl, f"Prioritize `{ctrl}`.")
+                lines.append(f"- {msg}")
+
+        if recommended_controls:
+            lines.append("")
+            lines.append("**Controls to operationalize next**")
+            for ctrl in recommended_controls[:4]:
+                msg = control_action_map.get(ctrl, f"Operationalize `{ctrl}`.")
+                lines.append(f"- {msg}")
+
+        if coverage_ratio < 0.50:
+            lines.append("")
+            lines.append("- Control coverage is still low, so closing the missing-control gap should be the first priority.")
+        elif coverage_ratio > 0.95:
+            lines.append("")
+            lines.append("- Coverage is high, but you should also review whether the threshold or mappings are over-triggering.")
+
+        useful_central = [(n, v) for n, v in top_central if v > 0.0]
+        if useful_central:
+            lines.append("")
+            lines.append("**Structurally important nodes**")
+            tops = ", ".join([f"{n}({v:.2f})" for n, v in useful_central[:5]])
+            lines.append(f"- {tops}")
+
+        return "\n".join(lines)
 
 # =========================
 # UI
@@ -1272,12 +1457,20 @@ with right:
 
     st.subheader("✅ " + t(lang, "next_steps"))
 
-    top_central = sorted(
+    raw_central = sorted(
         compute_centrality(G).get("betweenness", {}).items(),
         key=lambda x: x[1],
         reverse=True
-    )[:5]
-
+    )
+    
+    # remove zero-score centrality nodes and shorten names a bit
+    top_central = []
+    for n, v in raw_central:
+        if v <= 0.0:
+            continue
+        pretty_n = n.replace("clause:", "").replace("risk:", "").replace("control:", "")
+        top_central.append((pretty_n, v))
+    
     ns = build_next_steps(
         lang=lang,
         activated_risks=activated_risks,
@@ -1285,9 +1478,11 @@ with right:
         coverage_ratio=coverage_ratio,
         evidence_count=len(matches),
         top_central=top_central,
+        risk_level=rlevel,
+        recommended_controls=recommended_controls,
     )
     st.markdown(ns)
-
+    
     if selected_benchmark_case is not None:
         st.subheader("🧪 Benchmark comparison")
     
