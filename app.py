@@ -894,6 +894,26 @@ def fetch_rss_items(url: str, limit: int = 10) -> List[Dict[str, Any]]:
         })
     return items
 
+def load_benchmark_cases(path: str) -> List[Dict[str, Any]]:
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        return []
+    return [x for x in data if isinstance(x, dict)]
+
+def get_benchmark_options(
+    benchmark_cases: List[Dict[str, Any]],
+    jurisdiction: str,
+) -> List[Dict[str, Any]]:
+    filtered = []
+    for case in benchmark_cases:
+        case_jur = str(case.get("jurisdiction", "")).strip().upper()
+        if case_jur == jurisdiction.upper():
+            filtered.append(case)
+    return filtered
+    
 def build_next_steps(
     lang: str,
     activated_risks: List[str],
@@ -931,6 +951,8 @@ def build_next_steps(
 # UI
 # =========================
 st.set_page_config(page_title="AI Governance Lab — Explainability Finder", layout="wide")
+BENCHMARK_PATH = "benchmark_ai_governance.json"
+benchmark_cases_all = load_benchmark_cases(BENCHMARK_PATH)
 
 # language selector
 lang_label_map = {"English": "en", "日本語": "ja"}
@@ -954,11 +976,45 @@ with st.sidebar:
         help="Choose where governance evidence should come from. Add your own corpus under law_corpus/<JUR>/clauses.json.",
     )
 
+    # benchmark selector
+    benchmark_cases = get_benchmark_options(benchmark_cases_all, jurisdiction)
+    
+    benchmark_mode = st.checkbox("Use benchmark case", value=False)
+    
+    selected_benchmark_case = None
+    default_use_case = "LLM-based customer support chatbot processing personal data; risks include prompt injection, data leakage, and hallucinations."
+    
+    if benchmark_mode and benchmark_cases:
+        benchmark_labels = [
+            f"{c.get('id', 'unknown')} | {c.get('use_case', '')[:80]}"
+            for c in benchmark_cases
+        ]
+        selected_label = st.selectbox(
+            "Benchmark case",
+            options=benchmark_labels,
+            index=0,
+        )
+        selected_idx = benchmark_labels.index(selected_label)
+        selected_benchmark_case = benchmark_cases[selected_idx]
+        default_use_case = selected_benchmark_case.get("use_case", default_use_case)
+    
     use_case = st.text_area(
         t(lang, "use_case"),
-        value="LLM-based customer support chatbot processing personal data; risks include prompt injection, data leakage, and hallucinations.",
+        value=default_use_case,
         height=120,
     )
+    
+    if selected_benchmark_case is not None:
+        with st.expander("Benchmark expected outputs", expanded=False):
+            st.json({
+                "id": selected_benchmark_case.get("id"),
+                "expected_risks": selected_benchmark_case.get("expected_risks", []),
+                "expected_controls": selected_benchmark_case.get("expected_controls", []),
+                "expected_risk_level": selected_benchmark_case.get("expected_risk_level", ""),
+                "jurisdiction": selected_benchmark_case.get("jurisdiction", ""),
+            })
+    elif benchmark_mode and not benchmark_cases:
+        st.info(f"No benchmark cases found for jurisdiction: {jurisdiction}")
 
     st.subheader(t(lang, "semantic_evidence"))
     top_k = st.slider(t(lang, "topk_clauses"), 3, 12, 5)
@@ -1231,5 +1287,30 @@ with right:
         top_central=top_central,
     )
     st.markdown(ns)
+
+    if selected_benchmark_case is not None:
+        st.subheader("🧪 Benchmark comparison")
     
+        expected_risks = set(selected_benchmark_case.get("expected_risks", []))
+        expected_controls = set(selected_benchmark_case.get("expected_controls", []))
+        expected_level = selected_benchmark_case.get("expected_risk_level", "")
     
+        actual_risks = set(activated_risks)
+        actual_controls = set(recommended_controls)
+        actual_level = rlevel
+    
+        risk_overlap = sorted(list(expected_risks & actual_risks))
+        control_overlap = sorted(list(expected_controls & actual_controls))
+    
+        st.json({
+            "benchmark_id": selected_benchmark_case.get("id"),
+            "expected_risks": sorted(list(expected_risks)),
+            "actual_risks": sorted(list(actual_risks)),
+            "matched_risks": risk_overlap,
+            "expected_controls": sorted(list(expected_controls)),
+            "actual_controls": sorted(list(actual_controls)),
+            "matched_controls": control_overlap,
+            "expected_risk_level": expected_level,
+            "actual_risk_level": actual_level,
+        })    
+        
