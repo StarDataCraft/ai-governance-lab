@@ -1175,11 +1175,12 @@ with st.sidebar:
     st.header(t(lang, "settings"))
 
     jurisdiction = st.selectbox(
-        t(lang, "jurisdiction"),
-        ["JP", "AU", "EU", "US", "UK", "CA"],
-        index=0,
-        help="Choose where governance evidence should come from. Add your own corpus under law_corpus/<JUR>/clauses.json.",
-    )
+    t(lang, "jurisdiction"),
+    ["JP", "AU", "EU", "US", "UK", "CA"],
+    index=0,
+    help="Choose where governance evidence should come from. Add your own corpus under law_corpus/<JUR>/clauses.json.",
+    key="sidebar_jurisdiction_select",
+)
 
     # =========================
     # Benchmark selector
@@ -1215,9 +1216,10 @@ with st.sidebar:
         ]
     
         selected_label = st.selectbox(
-            "Benchmark case",
-            options=benchmark_labels,
-            index=0,
+        "Benchmark case",
+        options=benchmark_labels,
+        index=0,
+        key="sidebar_benchmark_case_select",
         )
     
         selected_idx = benchmark_labels.index(selected_label)
@@ -1259,6 +1261,7 @@ with st.sidebar:
             "BAAI/bge-m3",
         ],
         index=0,
+        key="sidebar_embedding_model_select",
     )
    
     st.subheader(t(lang, "dyn_threshold_scoring"))
@@ -1271,6 +1274,7 @@ with st.sidebar:
         t(lang, "viz_style"),
         options=[t(lang, "viz_soft"), t(lang, "viz_contrast")],
         index=0,
+        key="sidebar_viz_style_select",
     )
     palette_name = "soft" if viz_style == t(lang, "viz_soft") else "contrast"
     node_alpha = st.slider(t(lang, "node_alpha"), 0.50, 1.00, 0.92)
