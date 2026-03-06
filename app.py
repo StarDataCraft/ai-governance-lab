@@ -50,7 +50,8 @@ from sentence_transformers import SentenceTransformer
 import networkx as nx
 import matplotlib.pyplot as plt
 import feedparser
-
+from risk_engine.i18n import t
+from risk_engine.graph_viz import draw_governance_graph
 
 # =========================
 # Explainability Layer (v0)
@@ -147,6 +148,7 @@ def compute_explainability_score(
 
 
 def build_explainability_brief(
+    lang: str,
     jurisdiction: str,
     use_case: str,
     clause_matches: List[Dict[str, Any]],
@@ -163,6 +165,25 @@ def build_explainability_brief(
     Executive-friendly narrative that stitches evidence -> reasoning -> actions.
     Deterministic, no LLM.
     """
+    if lang == "ja":
+        heading = f"### 説明ナラティブ / 意思決定トレース（対象: {jurisdiction}）"
+        use_case_label = "**ユースケース**"
+        evidence_label = "**1) 証拠チェーン（何を根拠にしたか）**"
+        reasoning_label = "**2) 推論の透明性（なぜそのリスクが発火したか）**"
+        posture_label = "**3) リスクの意味（運用上どう解釈するか）**"
+        action_label = "**4) コントロールとギャップ（次に何をするか）**"
+        interp_label = "**解釈（このツールが本当に売っているもの）**"
+        legal_note = "*(これは再現可能な意思決定トレースであり、法的意見ではありません。)*"
+    else:
+        heading = f"### Explainability Narrative / Decision Trace (Jurisdiction: {jurisdiction})"
+        use_case_label = "**Use case**"
+        evidence_label = "**1) Evidence chain (what we relied on)**"
+        reasoning_label = "**2) Transparent reasoning (why risks activated)**"
+        posture_label = "**3) Risk posture (what this means operationally)**"
+        action_label = "**4) Controls + coverage gaps (what to do next)**"
+        interp_label = "**Interpretation (what this tool really sells)**"
+        legal_note = "*(This is a reproducible decision trace, not a legal opinion.)*"
+    
     top_evidence = clause_matches[:5] if clause_matches else []
 
     evidence_lines = []
@@ -868,33 +889,41 @@ def fetch_rss_items(url: str, limit: int = 10) -> List[Dict[str, Any]]:
 # =========================
 # UI
 # =========================
-
 st.set_page_config(page_title="AI Governance Lab — Explainability Finder", layout="wide")
 
-st.title("AI Governance Lab — Jurisdiction-aware Explainability Finder (Graph-based, OSS, no-key)")
+# language selector
+lang_label_map = {"English": "en", "日本語": "ja"}
+lang_ui = st.sidebar.selectbox(
+    "Language / 言語",
+    options=["English", "日本語"],
+    index=0,
+)
+lang = lang_label_map[lang_ui]
+
+st.title(t(lang, "app_title"))
 st.caption("This tool sells **organizational explainability**: evidence → thresholds → mappings → graph propagation → coverage gaps → decision trace.")
 
 with st.sidebar:
-    st.header("Settings")
+    st.header(t(lang, "settings"))
 
     jurisdiction = st.selectbox(
-        "Jurisdiction",
+        t(lang, "jurisdiction"),
         ["JP", "AU", "EU", "US", "UK", "CA"],
         index=0,
         help="Choose where governance evidence should come from. Add your own corpus under law_corpus/<JUR>/clauses.json.",
     )
 
     use_case = st.text_area(
-        "Use case",
+        t(lang, "use_case"),
         value="LLM-based customer support chatbot processing personal data; risks include prompt injection, data leakage, and hallucinations.",
         height=120,
     )
 
-    st.subheader("Semantic evidence (open-source embeddings)")
-    top_k = st.slider("Top-K clauses", 3, 12, 5)
+    st.subheader(t(lang, "semantic_evidence"))
+    top_k = st.slider(t(lang, "topk_clauses"), 3, 12, 5)
 
     model_name = st.selectbox(
-        "Local embedding model",
+        t(lang, "embedding_model"),
         [
             "intfloat/multilingual-e5-small",
             "sentence-transformers/all-MiniLM-L6-v2",
@@ -902,18 +931,30 @@ with st.sidebar:
         ],
         index=0,
     )
-
-    st.subheader("Dynamic threshold + scoring")
-    use_auto_threshold = st.checkbox("Use dynamic threshold (recommended)", value=True)
-    manual_threshold = st.slider("Manual threshold (if auto off)", 0.70, 0.95, 0.83, 0.005)
-
-    st.subheader("Latest developments (optional)")
-    enable_rss = st.checkbox("Fetch latest developments (RSS)", value=True)
-    recency_days = st.slider("Recency window (days)", 7, 60, 30)
-    extra_terms = st.text_input("Extra search terms (optional)", value="AI Act OR guideline OR framework OR compliance")
-
+   
+    st.subheader(t(lang, "dyn_threshold_scoring"))
+    use_auto_threshold = st.checkbox(t(lang, "use_dynamic_threshold"), value=True)
+    manual_threshold = st.slider(t(lang, "manual_threshold"), 0.70, 0.95, 0.83, 0.005)
+    
+    # graph style controls
+    st.subheader("Visualization")
+    viz_style = st.selectbox(
+        t(lang, "viz_style"),
+        options=[t(lang, "viz_soft"), t(lang, "viz_contrast")],
+        index=0,
+    )
+    palette_name = "soft" if viz_style == t(lang, "viz_soft") else "contrast"
+    node_alpha = st.slider(t(lang, "node_alpha"), 0.50, 1.00, 0.92)
+    edge_alpha = st.slider(t(lang, "edge_alpha"), 0.10, 1.00, 0.55)
+    edge_width_scale = st.slider(t(lang, "edge_width"), 0.5, 6.0, 3.0)
+    
+    st.subheader(t(lang, "latest_dev"))
+    enable_rss = st.checkbox(t(lang, "fetch_rss"), value=True)
+    recency_days = st.slider(t(lang, "recency_days"), 7, 60, 30)
+    
     st.subheader("Corpus")
     force_rebuild = st.checkbox("Force rebuild embeddings cache", value=False, help="Use if you updated clauses.json.")
+
 
 # Load corpus
 corpus_dir = os.path.join("law_corpus", jurisdiction)
@@ -1036,11 +1077,26 @@ with left:
     st.write(f"Risk Level: **{rlevel}**")
 
     # Graph + centrality + clustering
-    st.subheader("🕸️ Graph Visualization + Centrality + Risk Clustering")
+    st.subheader("🕸️ " + t(lang, "graph_section_title"))
     G = build_governance_graph(matches, activation_details, activated_risks, recommended_controls)
 
-    with st.expander("Graph visualization", expanded=True):
-        plot_graph(G)
+    with st.expander(t(lang, "graph_viz"), expanded=True):
+        fig_graph = draw_governance_graph(
+            G,
+            palette_name=palette_name,
+            node_alpha=node_alpha,
+            edge_alpha=edge_alpha,
+            edge_width_scale=edge_width_scale,
+            seed=7,
+        )
+        st.pyplot(fig_graph, clear_figure=True)
+    
+        st.caption(
+            f"{t(lang, 'legend')}: "
+            f"■ {t(lang, 'legend_clause')}  "
+            f"● {t(lang, 'legend_risk')}  "
+            f"▲ {t(lang, 'legend_control')}"
+        )
 
     centrality = compute_centrality(G)
     with st.expander("Centrality analysis (degree / betweenness)", expanded=False):
@@ -1059,7 +1115,7 @@ with left:
 
     # Latest developments RSS
     if enable_rss:
-        st.subheader("📰 Latest developments (RSS, ≤10)")
+        st.subheader("📰 " + t(lang, "latest_dev_title"))
         rss_url = build_google_news_rss(jurisdiction, extra_terms, recency_days)
         st.caption(f"RSS URL: {rss_url}")
         with st.spinner("Fetching RSS…"):
@@ -1072,7 +1128,7 @@ with left:
 
 
 with right:
-    st.subheader("🧭 Organizational Explainability")
+    st.subheader("🧭 " + t(lang, "explainability"))
     score_obj = compute_explainability_score(
         clause_matches=matches,
         activation_details=activation_details,
@@ -1091,8 +1147,9 @@ with right:
     with st.expander("Why this score (deterministic)", expanded=True):
         st.write(score_obj.narrative)
 
-    st.subheader("📝 Explainability Narrative / Decision Trace")
+    st.subheader("📝 " + t(lang, "decision_trace"))
     brief = build_explainability_brief(
+        lang=lang,
         jurisdiction=jurisdiction,
         use_case=use_case,
         clause_matches=matches,
@@ -1106,13 +1163,53 @@ with right:
         missing_controls=missing_controls,
     )
     st.markdown(brief)
+    st.subheader("✅ " + t(lang, "next_steps"))
 
-    with st.expander("How to improve explainability (actionable)", expanded=False):
-        st.markdown(
-            """
-- **Evidence trace**: add more clauses with URLs; ensure each clause has stable `clause_id`.  
-- **Reasoning transparency**: keep dynamic threshold + show top activation edges (already done).  
-- **Control coverage**: enrich control catalog or add missing controls for activated risks.  
-- **Monitoring readiness**: ensure controls include evaluation/monitoring/incident/human fallback.
-"""
-        )
+    top_central = sorted(
+        compute_centrality(G).get("betweenness", {}).items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:5]
+
+    ns = build_next_steps(
+        lang=lang,
+        activated_risks=activated_risks,
+        missing_controls=missing_controls,
+        coverage_ratio=coverage_ratio,
+        evidence_count=len(matches),
+        top_central=top_central,
+    )
+    st.markdown(ns)
+    
+    def build_next_steps(
+        lang: str,
+        activated_risks: List[str],
+        missing_controls: List[str],
+        coverage_ratio: float,
+        evidence_count: int,
+        top_central: List[Tuple[str, float]],
+    ) -> str:
+        lines: List[str] = []
+        lines.append(f"**{t(lang, 'ns_header')}**")
+    
+        if missing_controls:
+            lines.append(f"- {t(lang, 'ns_add_controls')}")
+            lines.append(f"  - Missing: `{', '.join(missing_controls)}`")
+    
+        lines.append(f"- {t(lang, 'ns_monitoring')}")
+    
+        if evidence_count < 5:
+            lines.append(f"- {t(lang, 'ns_expand_evidence')}")
+    
+        if coverage_ratio < 0.5 or coverage_ratio > 0.95:
+            lines.append(f"- {t(lang, 'ns_review_threshold')}")
+    
+        if activated_risks:
+            lines.append(f"- {t(lang, 'ns_assign_owner')}")
+            lines.append(f"  - Activated: `{', '.join(activated_risks)}`")
+    
+        if top_central:
+            tops = ", ".join([f"{n}({v:.2f})" for n, v in top_central[:5]])
+            lines.append(f"- Leverage points: {tops}")
+    
+        return "\n".join(lines)
